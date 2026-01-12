@@ -1,0 +1,189 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* RTR Racing Design System - Dark motorsport theme */
+
+@layer base {
+  :root {
+    /* Racing dark theme - always dark */
+    --background: 220 20% 6%;
+    --foreground: 0 0% 98%;
+
+    --card: 220 18% 10%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 18% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    /* RTR Neon Purple/Pink Primary - Matches logo */
+    --primary: 300 85% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Carbon Gray Secondary */
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 10% 55%;
+
+    /* Racing accent - neon purple glow */
+    --accent: 300 90% 70%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 15% 18%;
+    --input: 220 15% 15%;
+    --ring: 300 85% 65%;
+
+    --radius: 0.5rem;
+
+    /* Racing-specific colors */
+    --racing-red: 4 90% 58%;
+    --racing-red-glow: 4 100% 65%;
+    --racing-purple: 300 85% 65%;
+    --racing-purple-glow: 300 90% 75%;
+    --carbon: 220 18% 10%;
+    --carbon-light: 220 15% 15%;
+    --pit-yellow: 48 100% 50%;
+    --safety-car: 48 90% 55%;
+    --green-flag: 142 70% 45%;
+    --checkered: 0 0% 100%;
+
+    /* Gradients */
+    --gradient-racing: linear-gradient(135deg, hsl(300 85% 65%) 0%, hsl(280 90% 55%) 100%);
+    --gradient-carbon: linear-gradient(180deg, hsl(220 18% 12%) 0%, hsl(220 20% 6%) 100%);
+    --gradient-glow: radial-gradient(ellipse at center, hsl(300 85% 65% / 0.15) 0%, transparent 70%);
+
+    /* Shadows */
+    --shadow-racing: 0 4px 30px -5px hsl(300 85% 65% / 0.4);
+    --shadow-card: 0 8px 32px -8px hsl(0 0% 0% / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+}
+
+@layer components {
+  .racing-text {
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .racing-glow {
+    text-shadow: 0 0 20px hsl(300 85% 65% / 0.5), 0 0 40px hsl(300 85% 65% / 0.3);
+  }
+
+  .card-racing {
+    @apply bg-card border border-border rounded-lg;
+    background: linear-gradient(180deg, hsl(220 18% 12%) 0%, hsl(220 18% 8%) 100%);
+    box-shadow: var(--shadow-card);
+  }
+
+  .btn-racing {
+    @apply bg-primary text-primary-foreground font-semibold px-6 py-3 rounded-md;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: var(--shadow-racing);
+    transition: all 0.3s ease;
+  }
+
+  .btn-racing:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 35px -5px hsl(300 85% 65% / 0.5);
+  }
+
+  .event-fcy {
+    @apply border-l-4;
+    border-color: hsl(var(--pit-yellow));
+    background: linear-gradient(90deg, hsl(48 100% 50% / 0.1) 0%, transparent 50%);
+  }
+
+  .event-incident {
+    @apply border-l-4 border-primary;
+    background: linear-gradient(90deg, hsl(4 90% 58% / 0.1) 0%, transparent 50%);
+  }
+
+  .event-pit {
+    @apply border-l-4;
+    border-color: hsl(var(--muted-foreground));
+    background: linear-gradient(90deg, hsl(220 10% 55% / 0.1) 0%, transparent 50%);
+  }
+
+  .event-green {
+    @apply border-l-4;
+    border-color: hsl(var(--green-flag));
+    background: linear-gradient(90deg, hsl(142 70% 45% / 0.1) 0%, transparent 50%);
+  }
+
+  .lap-badge {
+    @apply inline-flex items-center justify-center min-w-[3rem] px-2 py-1 rounded font-bold text-sm;
+    font-family: 'Orbitron', sans-serif;
+    background: hsl(var(--secondary));
+    border: 1px solid hsl(var(--border));
+  }
+
+  .position-badge {
+    @apply inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm;
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .position-badge.p1 {
+    background: linear-gradient(135deg, hsl(48 100% 50%) 0%, hsl(36 100% 45%) 100%);
+    color: hsl(220 20% 6%);
+  }
+
+  .position-badge.p2 {
+    background: linear-gradient(135deg, hsl(220 10% 75%) 0%, hsl(220 10% 55%) 100%);
+    color: hsl(220 20% 6%);
+  }
+
+  .position-badge.p3 {
+    background: linear-gradient(135deg, hsl(25 80% 50%) 0%, hsl(15 70% 40%) 100%);
+    color: hsl(0 0% 100%);
+  }
+}
+
+@layer utilities {
+  .animate-pulse-racing {
+    animation: pulse-racing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-racing {
+    0%, 100% {
+      opacity: 1;
+      box-shadow: 0 0 20px hsl(300 85% 65% / 0.5);
+    }
+    50% {
+      opacity: 0.8;
+      box-shadow: 0 0 40px hsl(300 85% 65% / 0.3);
+    }
+  }
+
+  .text-gradient-racing {
+    background: linear-gradient(135deg, hsl(300 85% 65%) 0%, hsl(320 90% 75%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
