@@ -46,6 +46,7 @@ export type Database = {
           lap_time: string | null
           position: number
           race_id: string
+          category: string | null
         }
         Insert: {
           created_at?: string
@@ -54,6 +55,7 @@ export type Database = {
           lap_time?: string | null
           position: number
           race_id: string
+          category?: string | null
         }
         Update: {
           created_at?: string
@@ -62,6 +64,7 @@ export type Database = {
           lap_time?: string | null
           position?: number
           race_id?: string
+          category?: string | null
         }
         Relationships: [
           {
@@ -75,6 +78,7 @@ export type Database = {
       }
       race_events: {
         Row: {
+          category: string | null
           clip_url: string | null
           created_at: string
           description: string
@@ -86,6 +90,7 @@ export type Database = {
           race_id: string
         }
         Insert: {
+          category?: string | null
           clip_url?: string | null
           created_at?: string
           description: string
@@ -97,6 +102,7 @@ export type Database = {
           race_id: string
         }
         Update: {
+          category?: string | null
           clip_url?: string | null
           created_at?: string
           description?: string

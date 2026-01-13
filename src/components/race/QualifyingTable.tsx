@@ -79,6 +79,9 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
               <p className="font-medium">{result.driver}</p>
             </div>
             <p className="font-racing text-sm text-muted-foreground">
+              {result.category}
+            </p>
+            <p className="font-racing text-sm text-muted-foreground">
               {result.lap_time || "—"}
             </p>
           </div>
