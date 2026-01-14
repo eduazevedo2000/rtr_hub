@@ -13,23 +13,77 @@ type Race = Database["public"]["Tables"]["races"]["Row"];
 const Index = () => {
   const [activeRace, setActiveRace] = useState<Race | null>(null);
   const [loading, setLoading] = useState(true);
+  const [racesCount, setRacesCount] = useState(0);
+  const [victoriesCount, setVictoriesCount] = useState(0);
+  const [driversCount, setDriversCount] = useState(0);
 
   useEffect(() => {
     const fetchActiveRace = async () => {
-      const { data, error } = await supabase
+      // Primeiro tenta buscar uma corrida ativa
+      const { data: activeData, error: activeError } = await supabase
         .from("races")
         .select("*")
         .eq("is_active", true)
         .maybeSingle();
 
-      if (!error && data) {
-        setActiveRace(data);
+      if (!activeError && activeData) {
+        setActiveRace(activeData);
+        setLoading(false);
+        return;
+      }
+
+      // Se não houver corrida ativa, busca a última corrida (mais recente)
+      const { data: lastRaceData, error: lastRaceError } = await supabase
+        .from("races")
+        .select("*")
+        .order("date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!lastRaceError && lastRaceData) {
+        setActiveRace(lastRaceData);
       }
       setLoading(false);
     };
 
+    const fetchRacesCount = async () => {
+      const { data, error } = await supabase
+        .from("races")
+        .select("count")
+        .single();
+
+      if (!error && data) {
+        setRacesCount(data.count);
+      }
+    };
+
+    const fetchVictoriesCount = async () => {
+      const { data, error } = await supabase
+        .from("races")
+        .select("count")
+        .eq("position_finished", "1");
+
+      if (!error && data) {
+        setVictoriesCount(data[0].count);
+      }
+    };
+
+    const fetchDriversCount = async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("count")
+
+      if (!error && data) {
+        setDriversCount(data[0].count);
+      }
+    };
+
     fetchActiveRace();
+    fetchRacesCount();
+    fetchVictoriesCount();
+    fetchDriversCount();
   }, []);
+  
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,9 +142,9 @@ const Index = () => {
         <div className="container py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { icon: Flag, label: "Corridas", value: "24" },
-              { icon: Trophy, label: "Vitórias", value: "8" },
-              { icon: Users, label: "Pilotos", value: "5" },
+              { icon: Flag, label: "Corridas", value: racesCount },
+              { icon: Trophy, label: "Vitórias", value: victoriesCount },
+              { icon: Users, label: "Pilotos", value: driversCount },
               { icon: Clock, label: "Horas", value: "120+" },
             ].map((stat, index) => (
               <motion.div
@@ -135,7 +189,7 @@ const Index = () => {
       <footer className="border-t border-border py-8">
         <div className="container text-center">
           <p className="text-sm text-muted-foreground">
-            © 2024 Ric Team Racing. Powered by iRacing.
+            © 2026 RTR Sempre a puxar croquetes
           </p>
         </div>
       </footer>

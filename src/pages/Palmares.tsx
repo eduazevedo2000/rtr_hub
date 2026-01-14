@@ -3,28 +3,36 @@ import { motion } from "framer-motion";
 import { Trophy, Calendar, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
+import { RaceEventsList } from "@/components/race/RaceEventsList";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Database } from "@/integrations/supabase/types";
 
-type Achievement = Database["public"]["Tables"]["team_achievements"]["Row"];
+type Race = Database["public"]["Tables"]["races"]["Row"];
 
 export default function Palmares() {
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [races, setRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAchievements = async () => {
+    const fetchRaces = async () => {
       const { data, error } = await supabase
-        .from("team_achievements")
+        .from("races")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("date", { ascending: false });
 
       if (!error && data) {
-        setAchievements(data);
+        setRaces(data);
       }
       setLoading(false);
     };
 
-    fetchAchievements();
+    fetchRaces();
   }, []);
 
   return (
@@ -57,7 +65,7 @@ export default function Palmares() {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : achievements.length === 0 ? (
+        ) : races.length === 0 ? (
           <div className="card-racing p-12 text-center max-w-lg mx-auto">
             <Trophy className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
             <h2 className="font-racing text-xl mb-2">Em Construção</h2>
@@ -66,41 +74,75 @@ export default function Palmares() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {achievements.map((achievement, index) => (
-              <motion.div
-                key={achievement.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="card-racing overflow-hidden group"
-              >
-                {achievement.image_url && (
-                  <div className="aspect-video overflow-hidden">
-                    <img
-                      src={achievement.image_url}
-                      alt={achievement.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                )}
-                <div className="p-6">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                    <Calendar className="h-3 w-3" />
-                    {achievement.date || "Data não especificada"}
-                  </div>
-                  <h3 className="font-racing text-lg font-bold mb-2">
-                    {achievement.title}
-                  </h3>
-                  {achievement.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {achievement.description}
-                    </p>
+          <>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {races.map((race, index) => (
+                <motion.div
+                  key={race.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="card-racing overflow-hidden group cursor-pointer hover:border-primary/50 transition-colors relative"
+                  onClick={() => {
+                    if (race.id) {
+                      setSelectedRaceId(race.id);
+                    }
+                  }}
+                >
+                  {race.position_finished && (
+                    <div className="absolute top-4 right-4 z-10">
+                      <span className={`position-badge ${race.position_finished === 'P1' || race.position_finished === '1' ? 'p1' : race.position_finished === 'P2' || race.position_finished === '2' ? 'p2' : race.position_finished === 'P3' || race.position_finished === '3' ? 'p3' : 'bg-secondary'}`}>
+                        {race.position_finished}
+                      </span>
+                    </div>
                   )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                  <div className="p-6">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                      <Calendar className="h-3 w-3" />
+                        {race.date || "Data não especificada"}
+                    </div>
+                    <h3 className="font-racing text-lg font-bold mb-2">
+                      {race.name}
+                    </h3>
+                    {race.track && (
+                      <div className="flex items-center gap-2 mt-3">
+                        <Trophy className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs font-racing uppercase tracking-wider text-muted-foreground">
+                          {race.track}
+                        </span>
+                      </div>
+                    )}
+                    {race.category && (
+                      <div className="flex items-center gap-2 mt-3">
+                        <Trophy className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs font-racing uppercase tracking-wider text-muted-foreground">
+                          {race.category}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <Dialog
+              open={selectedRaceId !== null}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setSelectedRaceId(null);
+                }
+              }}
+            >
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="font-racing text-2xl">
+                    {races.find((r) => r.id === selectedRaceId)?.name || "Eventos da Corrida"}
+                  </DialogTitle>
+                </DialogHeader>
+                {selectedRaceId && <RaceEventsList raceId={selectedRaceId} />}
+              </DialogContent>
+            </Dialog>
+          </>
         )}
       </main>
     </div>

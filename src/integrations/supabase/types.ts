@@ -44,7 +44,7 @@ export type Database = {
           driver: string
           id: string
           lap_time: string | null
-          position: number
+          position: string
           race_id: string
           category: string | null
         }
@@ -131,6 +131,8 @@ export type Database = {
           is_active: boolean
           name: string
           track: string
+          position_finished: string | null
+          category: string | null
         }
         Insert: {
           created_at?: string
@@ -139,6 +141,8 @@ export type Database = {
           is_active?: boolean
           name: string
           track: string
+          position_finished?: string | null
+          category?: string | null
         }
         Update: {
           created_at?: string
@@ -147,6 +151,8 @@ export type Database = {
           is_active?: boolean
           name?: string
           track?: string
+          position_finished?: string | null
+          category?: string | null
         }
         Relationships: []
       }
@@ -158,6 +164,9 @@ export type Database = {
           id: string
           image_url: string | null
           title: string
+          race_id: string | null
+          position_finished: string | null
+          category: string | null
         }
         Insert: {
           created_at?: string
@@ -166,6 +175,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           title: string
+          race_id?: string | null
+          position_finished?: string | null
+          category?: string | null
         }
         Update: {
           created_at?: string
@@ -174,6 +186,53 @@ export type Database = {
           id?: string
           image_url?: string | null
           title?: string
+          race_id?: string | null
+          position_finished?: string | null
+          category?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_achievements_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "races"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      images: {
+        Row: {
+          id: string
+          storage_path: string
+          url: string
+          filename: string
+          mime_type: string | null
+          size_bytes: number | null
+          description: string | null
+          category: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          storage_path: string
+          url: string
+          filename: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          description?: string | null
+          category?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          storage_path?: string
+          url?: string
+          filename?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          description?: string | null
+          category?: string | null
+          created_at?: string
         }
         Relationships: []
       }
@@ -182,25 +241,25 @@ export type Database = {
           created_at: string
           id: string
           race_id: string
-          track_map_url: string | null
+          track_map_id: string | null
           weather_description: string | null
-          weather_image_url: string | null
+          weather_image_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           race_id: string
-          track_map_url?: string | null
+          track_map_id?: string | null
           weather_description?: string | null
-          weather_image_url?: string | null
+          weather_image_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           race_id?: string
-          track_map_url?: string | null
+          track_map_id?: string | null
           weather_description?: string | null
-          weather_image_url?: string | null
+          weather_image_id?: string | null
         }
         Relationships: [
           {
@@ -210,7 +269,42 @@ export type Database = {
             referencedRelation: "races"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "track_info_weather_image_id_fkey"
+            columns: ["weather_image_id"]
+            isOneToOne: false
+            referencedRelation: "images"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "track_info_track_map_id_fkey"
+            columns: ["track_map_id"]
+            isOneToOne: false
+            referencedRelation: "images"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      drivers: {
+        Row: {
+          id: string
+          created_at: string
+          name: string
+          category: string
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          name: string
+          category: string
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          name?: string
+          category?: string
+        }
+        Relationships: []
       }
     }
     Views: {

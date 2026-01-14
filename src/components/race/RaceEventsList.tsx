@@ -20,7 +20,7 @@ interface RaceEventsListProps {
 export function RaceEventsList({ raceId }: RaceEventsListProps) {
   const [events, setEvents] = useState<RaceEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>("LMP2");
+  const [selectedCategory, setSelectedCategory] = useState<string>("GT3 PRO");
 
   useEffect(() => {
     const fetchEvents = async () => {

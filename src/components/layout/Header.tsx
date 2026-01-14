@@ -49,7 +49,8 @@ export function Header() {
           })}
         </nav>
 
-        <div className="flex items-center gap-2">
+        {/* Botões de admin/login/logout escondidos para versão beta */}
+        {/* <div className="flex items-center gap-2">
           {user ? (
             <>
               <Link to="/admin">
@@ -71,7 +72,7 @@ export function Header() {
               </Button>
             </Link>
           )}
-        </div>
+        </div> */}
       </div>
     </header>
   );

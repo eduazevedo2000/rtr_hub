@@ -3,7 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Timer } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
-type QualifyingResult = Database["public"]["Tables"]["qualifying_results"]["Row"];
+type QualifyingResultRow = Database["public"]["Tables"]["qualifying_results"]["Row"];
+type DriverRow = Database["public"]["Tables"]["drivers"]["Row"];
+
+type QualifyingResult = QualifyingResultRow & {
+  driver?: DriverRow;
+};
 
 interface QualifyingTableProps {
   raceId?: string;
@@ -24,10 +29,36 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
         query = query.eq("race_id", raceId);
       }
 
-      const { data, error } = await query;
-      if (!error && data) {
-        setResults(data);
+      const { data: resultsData, error: resultsError } = await query;
+      
+      if (resultsError || !resultsData) {
+        setLoading(false);
+        return;
       }
+
+      // Buscar os drivers separadamente
+      const driverIds = [...new Set(resultsData.map(r => (r as any).driver_id))].filter(Boolean);
+      
+      if (driverIds.length > 0) {
+        const { data: driversData } = await supabase
+          .from("drivers")
+          .select("*")
+          .in("id", driverIds);
+
+        // Fazer o join no código
+        const resultsWithDrivers = resultsData.map(result => {
+          const driver = driversData?.find(d => d.id === (result as any).driver_id);
+          return {
+            ...result,
+            driver: driver || undefined,
+          } as QualifyingResult;
+        });
+
+        setResults(resultsWithDrivers);
+      } else {
+        setResults(resultsData as QualifyingResult[]);
+      }
+      
       setLoading(false);
     };
 
@@ -64,22 +95,22 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
           >
             <span
               className={`position-badge ${
-                result.position === 1
+                result.position === "1"
                   ? "p1"
-                  : result.position === 2
+                  : result.position === "2"
                   ? "p2"
-                  : result.position === 3
+                  : result.position === "3"
                   ? "p3"
                   : "bg-secondary"
               }`}
             >
-              P{result.position}
+              {result.position !== 'DNF' ? `P${result.position}` : result.position}
             </span>
             <div className="flex-1">
-              <p className="font-medium">{result.driver}</p>
+              <p className="font-medium">{result.driver?.name || "—"}</p>
             </div>
             <p className="font-racing text-sm text-muted-foreground">
-              {result.category}
+              {result.driver?.category || "—"}
             </p>
             <p className="font-racing text-sm text-muted-foreground">
               {result.lap_time || "—"}
