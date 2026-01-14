@@ -13,4 +13,10 @@ psd
 thumb
 sketch
 
+# Environment variables (contém credenciais sensíveis)
+.env
+.env.local
+.env.production
+.env.*.local
+
 # End of https://mrkandreev.name/snippets/gitignore-generator/#react
