@@ -35,6 +35,34 @@ export default function Palmares() {
     fetchRaces();
   }, []);
 
+  const formatDate = (d: string | null) => {
+    if (!d) return "Data não especificada";
+    try {
+      return new Date(d).toLocaleDateString("pt-PT", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return d;
+    }
+  };
+
+  type TimelineItem =
+    | { type: "year"; year: number }
+    | { type: "race"; race: Race };
+
+  const timelineItems: TimelineItem[] = [];
+  let lastYear: number | null = null;
+  for (const race of races) {
+    const y = race.date ? new Date(race.date).getFullYear() : null;
+    if (y != null && y !== lastYear) {
+      timelineItems.push({ type: "year", year: y });
+      lastYear = y;
+    }
+    timelineItems.push({ type: "race", race });
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -75,54 +103,116 @@ export default function Palmares() {
           </div>
         ) : (
           <>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {races.map((race, index) => (
-                <motion.div
-                  key={race.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="card-racing overflow-hidden group cursor-pointer hover:border-primary/50 transition-colors relative"
-                  onClick={() => {
-                    if (race.id) {
-                      setSelectedRaceId(race.id);
-                    }
-                  }}
-                >
-                  {race.position_finished && (
-                    <div className="absolute top-4 right-4 z-10">
-                      <span className={`position-badge ${race.position_finished === 'P1' || race.position_finished === '1' ? 'p1' : race.position_finished === 'P2' || race.position_finished === '2' ? 'p2' : race.position_finished === 'P3' || race.position_finished === '3' ? 'p3' : 'bg-secondary'}`}>
-                        {race.position_finished}
-                      </span>
-                    </div>
-                  )}
-                  <div className="p-6">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                      <Calendar className="h-3 w-3" />
-                        {race.date || "Data não especificada"}
-                    </div>
-                    <h3 className="font-racing text-lg font-bold mb-2">
-                      {race.name}
-                    </h3>
-                    {race.track && (
-                      <div className="flex items-center gap-2 mt-3">
-                        <Trophy className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-xs font-racing uppercase tracking-wider text-muted-foreground">
-                          {race.track}
+            <div className="relative max-w-3xl mx-auto">
+              {/* Linha da cronologia */}
+              <div
+                className="absolute left-5 top-0 bottom-0 w-px bg-gradient-to-b from-primary/50 via-primary to-primary/50"
+                aria-hidden
+              />
+
+              <div className="space-y-0">
+                {timelineItems.map((item, index) => {
+                  if (item.type === "year") {
+                    return (
+                      <motion.div
+                        key={`year-${item.year}`}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.06 }}
+                        className="relative flex items-center gap-4 sm:gap-6 py-4 first:pt-0"
+                      >
+                        <div className="flex w-10 shrink-0 justify-center">
+                          <div
+                            className="relative z-10 h-3 w-3 rotate-45 rounded-sm border-2 border-primary bg-primary/20"
+                            aria-hidden
+                          />
+                        </div>
+                        <span className="font-racing text-sm font-bold uppercase tracking-wider text-primary">
+                          {item.year}
                         </span>
+                      </motion.div>
+                    );
+                  }
+
+                  const race = item.race;
+                  return (
+                    <motion.div
+                      key={race.id}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.06 }}
+                      className="relative flex items-start gap-4 sm:gap-6 py-6 last:pb-0"
+                    >
+                      <div className="flex w-10 shrink-0 justify-center pt-1.5">
+                        <div
+                          className="relative z-10 h-4 w-4 rounded-full border-2 border-primary bg-background ring-4 ring-background"
+                          aria-hidden
+                        />
                       </div>
-                    )}
-                    {race.category && (
-                      <div className="flex items-center gap-2 mt-3">
-                        <Trophy className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-xs font-racing uppercase tracking-wider text-muted-foreground">
-                          {race.category}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+
+                      <motion.div
+                        className="card-racing group relative min-w-0 flex-1 cursor-pointer overflow-hidden transition-colors hover:border-primary/50"
+                        onClick={() => {
+                          if (race.id) setSelectedRaceId(race.id);
+                        }}
+                        whileHover={{ x: 4 }}
+                      >
+                        {race.position_finished && (
+                          <div className="absolute top-4 right-4 z-10">
+                            <span
+                              className={`position-badge ${
+                                race.position_finished === "P1" ||
+                                race.position_finished === "1"
+                                  ? "p1"
+                                  : race.position_finished === "P2" ||
+                                      race.position_finished === "2"
+                                    ? "p2"
+                                    : race.position_finished === "P3" ||
+                                        race.position_finished === "3"
+                                      ? "p3"
+                                      : "bg-secondary"
+                              }`}
+                            >
+                              {race.position_finished}
+                            </span>
+                          </div>
+                        )}
+                        <div className="p-6">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                            <Calendar className="h-3 w-3 shrink-0" />
+                            {formatDate(race.date)}
+                          </div>
+                          <h3 className="font-racing text-lg font-bold mb-2">
+                            {race.name}
+                          </h3>
+                          {race.track && (
+                            <div className="flex items-center gap-2 mt-3">
+                              <Trophy className="h-4 w-4 shrink-0 text-muted-foreground" />
+                              <span className="text-xs font-racing uppercase tracking-wider text-muted-foreground">
+                                {race.track}
+                              </span>
+                            </div>
+                          )}
+                          {(race.category || race.split) && (
+                            <div className="flex flex-wrap items-center gap-2 mt-2">
+                              {race.category && (
+                                <span className="text-xs font-racing uppercase tracking-wider text-muted-foreground">
+                                  {race.category}
+                                </span>
+                              )}
+                              {race.split && (
+                                <span className="text-xs font-racing uppercase tracking-wider text-muted-foreground">
+                                  {race.split}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
 
             <Dialog

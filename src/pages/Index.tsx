@@ -32,17 +32,18 @@ const Index = () => {
         return;
       }
 
-      // Se não houver corrida ativa, busca a última corrida (mais recente)
-      const { data: lastRaceData, error: lastRaceError } = await supabase
-        .from("races")
-        .select("*")
-        .order("date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // // Se não houver corrida ativa, busca a última corrida (mais recente)
+      // const { data: lastRaceData, error: lastRaceError } = await supabase
+      //   .from("races")
+      //   .select("*")
+      //   .order("date", { ascending: false })
+      //   .limit(1)  
+      //   .maybeSingle();
 
-      if (!lastRaceError && lastRaceData) {
-        setActiveRace(lastRaceData);
-      }
+      // if (!lastRaceError && lastRaceData) {
+      //   setActiveRace(lastRaceData);
+      // }
+
       setLoading(false);
     };
 
@@ -140,12 +141,12 @@ const Index = () => {
       {/* Stats Bar */}
       <section className="border-b border-border bg-card/50">
         <div className="container py-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
               { icon: Flag, label: "Corridas", value: racesCount },
               { icon: Trophy, label: "Vitórias", value: victoriesCount },
               { icon: Users, label: "Pilotos", value: driversCount },
-              { icon: Clock, label: "Horas", value: "120+" },
+              // { icon: Clock, label: "Horas", value: "120+" },
             ].map((stat, index) => (
               <motion.div
                 key={stat.label}

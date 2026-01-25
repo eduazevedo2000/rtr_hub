@@ -9,6 +9,7 @@ CREATE TYPE public.race_event_type AS ENUM (
   'driver_change',
   'restart',
   'finish',
+  'qualification',
   'other'
 );
 
@@ -16,7 +17,8 @@ CREATE TYPE public.race_event_type AS ENUM (
 CREATE TABLE public.drivers (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
-  category TEXT NOT NULL,
+  known_as TEXT,
+  category TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
@@ -28,6 +30,7 @@ CREATE TABLE public.races (
   date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   is_active BOOLEAN NOT NULL DEFAULT false,
   position_finished TEXT,
+  split TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
@@ -65,6 +68,7 @@ CREATE TABLE public.team_achievements (
   race_id UUID REFERENCES public.races(id) ON DELETE SET NULL,
   position_finished TEXT,
   category TEXT,
+  split TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
@@ -90,6 +94,22 @@ CREATE TABLE public.images (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
+-- Create categories table
+CREATE TABLE public.categories (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Create event_types table (tipos de ocorrência de corrida)
+CREATE TABLE public.event_types (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  value TEXT NOT NULL UNIQUE,
+  label TEXT NOT NULL,
+  order_index INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
 -- Create track_info table (weather forecast and track map)
 CREATE TABLE public.track_info (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -108,6 +128,8 @@ ALTER TABLE public.qualifying_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.team_achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.faq ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.images ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.event_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.track_info ENABLE ROW LEVEL SECURITY;
 
 -- Create public read policies (everyone can view)
@@ -118,6 +140,8 @@ CREATE POLICY "Anyone can view qualifying results" ON public.qualifying_results 
 CREATE POLICY "Anyone can view achievements" ON public.team_achievements FOR SELECT USING (true);
 CREATE POLICY "Anyone can view faq" ON public.faq FOR SELECT USING (true);
 CREATE POLICY "Anyone can view images" ON public.images FOR SELECT USING (true);
+CREATE POLICY "Anyone can view categories" ON public.categories FOR SELECT USING (true);
+CREATE POLICY "Anyone can view event types" ON public.event_types FOR SELECT USING (true);
 CREATE POLICY "Anyone can view track info" ON public.track_info FOR SELECT USING (true);
 
 -- Create insert policies for authenticated users (admin)
@@ -128,6 +152,8 @@ CREATE POLICY "Authenticated users can insert qualifying results" ON public.qual
 CREATE POLICY "Authenticated users can insert achievements" ON public.team_achievements FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "Authenticated users can insert faq" ON public.faq FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "Authenticated users can insert images" ON public.images FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Authenticated users can insert categories" ON public.categories FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Authenticated users can insert event types" ON public.event_types FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "Authenticated users can insert track info" ON public.track_info FOR INSERT TO authenticated WITH CHECK (true);
 
 -- Create update policies for authenticated users
@@ -138,6 +164,8 @@ CREATE POLICY "Authenticated users can update qualifying results" ON public.qual
 CREATE POLICY "Authenticated users can update achievements" ON public.team_achievements FOR UPDATE TO authenticated USING (true);
 CREATE POLICY "Authenticated users can update faq" ON public.faq FOR UPDATE TO authenticated USING (true);
 CREATE POLICY "Authenticated users can update images" ON public.images FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Authenticated users can update categories" ON public.categories FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Authenticated users can update event types" ON public.event_types FOR UPDATE TO authenticated USING (true);
 CREATE POLICY "Authenticated users can update track info" ON public.track_info FOR UPDATE TO authenticated USING (true);
 
 -- Create delete policies for authenticated users
@@ -148,63 +176,86 @@ CREATE POLICY "Authenticated users can delete qualifying results" ON public.qual
 CREATE POLICY "Authenticated users can delete achievements" ON public.team_achievements FOR DELETE TO authenticated USING (true);
 CREATE POLICY "Authenticated users can delete faq" ON public.faq FOR DELETE TO authenticated USING (true);
 CREATE POLICY "Authenticated users can delete images" ON public.images FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Authenticated users can delete categories" ON public.categories FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Authenticated users can delete event types" ON public.event_types FOR DELETE TO authenticated USING (true);
 CREATE POLICY "Authenticated users can delete track info" ON public.track_info FOR DELETE TO authenticated USING (true);
 
 -- Enable realtime for race_events table
 ALTER PUBLICATION supabase_realtime ADD TABLE public.race_events;
 
--- Insert drivers
-INSERT INTO public.drivers (name, category) VALUES
--- LMP2
-('Francisco Silva', 'LMP2'),
-('Afonso Reis', 'LMP2'),
-('Roberto Artur', 'LMP2'),
--- GT3 PRO
-('José Barbosa', 'GT3 PRO'),
-('Rodrigo Marreiros', 'GT3 PRO'),
-('Marco Vilela', 'GT3 PRO');
+-- Insert categories
+INSERT INTO public.categories (name) VALUES
+('GERAL'),
+('LMP2'),
+('GT3 PRO');
+
+-- Insert event_types (value must match race_event_type enum)
+INSERT INTO public.event_types (value, label, order_index) VALUES
+('race_start', '🏁 Partida', 1),
+('pit_stop', '⛽ Pit Stop', 2),
+('position_change', '📊 Mudança de Posição', 3),
+('fcy_short', '🟡 Short FCY', 4),
+('fcy_long', '🟡 Long FCY', 5),
+('incident', '⚠️ Incidente', 6),
+('driver_change', '👥 Troca de Piloto', 7),
+('restart', '🟢 Restart', 8),
+('finish', '🏆 Fim de Corrida', 9),
+('qualification', '⏱️ Qualificação', 10),
+('other', '📝 Outro', 11);
+
+-- Insert drivers (name, alcunha; category não definida por agora)
+INSERT INTO public.drivers (name, known_as) VALUES
+('Francisco Silva', 'Kiko'),
+('Bruno Monteiro', 'Presidente'),
+('José Barbosa', 'Pirate'),
+('Duarte Mota', 'Mota'),
+('Roberto Artur', 'Roberto'),
+('Marco Vilela', 'Marco'),
+('Afonso Reis', 'Afonso'),
+('Bernardo Silva', 'Bernardo'),
+('Rodrigo Marreiros', 'Rodrigo');
 
 -- Insert races
-INSERT INTO public.races (name, track, date, is_active, position_finished) VALUES
+INSERT INTO public.races (name, track, date, is_active, position_finished, split) VALUES
 -- 2024
-('6 horas de SPA - Francorchamps', 'Spa-Francorchamps', '2024-01-01'::timestamp with time zone, false, '8'),
-('10 horas de Petit Le Mans', 'Road Atlanta', '2024-01-01'::timestamp with time zone, false, '1'),
-('6 horas de Interlagos', 'Autódromo de Interlagos', '2024-01-01'::timestamp with time zone, false, '4'),
+('6 horas de SPA - Francorchamps', 'Spa-Francorchamps', '2024-01-01'::timestamp with time zone, false, '8', NULL),
+('10 horas de Petit Le Mans', 'Road Atlanta', '2024-01-01'::timestamp with time zone, false, '1', '9'),
+('6 horas de Interlagos', 'Autódromo de Interlagos', '2024-01-01'::timestamp with time zone, false, '4', NULL),
 -- 2025
-('24 horas de Daytona', 'Daytona International Speedway', '2025-01-01'::timestamp with time zone, false, '9'),
-('12 horas de Bathurst', 'Mount Panorama Circuit', '2025-01-01'::timestamp with time zone, false, '13'),
-('12 horas de Sebring', 'Sebring International Raceway', '2025-01-01'::timestamp with time zone, false, '17'),
-('12 horas de SPA', 'Spa-Francorchamps', '2025-01-01'::timestamp with time zone, false, '2'),
-('24 horas de Nurburgring', 'Nürburgring Nordschleife', '2025-01-01'::timestamp with time zone, false, '7'),
-('24 horas de Le Mans', 'Circuit de la Sarthe', '2025-01-01'::timestamp with time zone, false, '12'),
-('24 horas de SPA', 'Spa-Francorchamps', '2025-01-01'::timestamp with time zone, false, 'DNF'),
-('6 horas de Indy', 'Indianapolis Motor Speedway', '2025-01-01'::timestamp with time zone, false, '20'),
-('10 horas de Petit Le Mans', 'Road Atlanta', '2025-01-01'::timestamp with time zone, false, '4'),
-('24 horas de Barcelona', 'Circuit de Barcelona-Catalunya', '2025-01-01'::timestamp with time zone, false, '13'),
-('24 horas de Spa-Francorchamps', 'Spa-Francorchamps', '2025-01-01'::timestamp with time zone, false, '11'),
+('24 horas de Daytona', 'Daytona International Speedway', '2025-01-01'::timestamp with time zone, false, '9', NULL),
+('12 horas de Bathurst', 'Mount Panorama Circuit', '2025-01-01'::timestamp with time zone, false, '13', '8'),
+('12 horas de Sebring', 'Sebring International Raceway', '2025-01-01'::timestamp with time zone, false, '17', '7'),
+('12 horas de SPA', 'Spa-Francorchamps', '2025-01-01'::timestamp with time zone, false, '2', '1/8'),
+('24 horas de Nurburgring', 'Nürburgring Nordschleife', '2025-01-01'::timestamp with time zone, false, '7', '3/11'),
+('24 horas de Le Mans', 'Circuit de la Sarthe', '2025-01-01'::timestamp with time zone, false, '12', '5'),
+('24 horas de SPA', 'Spa-Francorchamps', '2025-01-01'::timestamp with time zone, false, 'DNF', '2'),
+('6 horas de Indy', 'Indianapolis Motor Speedway', '2025-01-01'::timestamp with time zone, false, '20', '4'),
+('10 horas de Petit Le Mans', 'Road Atlanta', '2025-01-01'::timestamp with time zone, false, '4', '1/11'),
+('24 horas de Barcelona', 'Circuit de Barcelona-Catalunya', '2025-01-01'::timestamp with time zone, false, '13', '2'),
+('24 horas de Spa-Francorchamps', 'Spa-Francorchamps', '2025-01-01'::timestamp with time zone, false, '11', '1'),
 -- 2026
-('24h Daytona VSCA Championship 2026', 'Daytona International Speedway', '2026-01-10'::timestamp with time zone, false, '8');
+('24h Daytona VSCA Championship 2026', 'Daytona International Speedway', '2026-01-10'::timestamp with time zone, false, '8', NULL);
 
 -- Insert team achievements (Palmarés)
-INSERT INTO public.team_achievements (title, description, date, image_url, race_id, position_finished, category) VALUES
+INSERT INTO public.team_achievements (title, description, date, image_url, race_id, position_finished, category, split) VALUES
 -- 2024
-('6 horas de SPA - Francorchamps', '8 lugar com Ferrari 296 GT3', '2024', NULL, (SELECT id FROM public.races WHERE name = '6 horas de SPA - Francorchamps' AND track = 'Spa-Francorchamps' LIMIT 1), '8', 'GT3 PRO'),
-('10 horas de Petit Le Mans', '1 lugar com Ferrari 296 GT3 (Split 9)', '2024', NULL, (SELECT id FROM public.races WHERE name = '10 horas de Petit Le Mans' AND track = 'Road Atlanta' AND date::text LIKE '2024%' LIMIT 1), '1', 'GT3 PRO'),
-('6 horas de Interlagos', '4 lugar com Ferrari 296 GT3', '2024', NULL, (SELECT id FROM public.races WHERE name = '6 horas de Interlagos' LIMIT 1), '4', 'GT3 PRO'),
+('6 horas de SPA - Francorchamps', '8 lugar com Ferrari 296 GT3', '2024', NULL, (SELECT id FROM public.races WHERE name = '6 horas de SPA - Francorchamps' AND track = 'Spa-Francorchamps' LIMIT 1), '8', 'GT3 PRO', NULL),
+('10 horas de Petit Le Mans', '1 lugar com Ferrari 296 GT3', '2024', NULL, (SELECT id FROM public.races WHERE name = '10 horas de Petit Le Mans' AND track = 'Road Atlanta' AND date::text LIKE '2024%' LIMIT 1), '1', 'GT3 PRO', '9'),
+('6 horas de Interlagos', '4 lugar com Ferrari 296 GT3', '2024', NULL, (SELECT id FROM public.races WHERE name = '6 horas de Interlagos' LIMIT 1), '4', 'GT3 PRO', NULL),
 -- 2025
-('24 horas de Daytona', '9 lugar com Ferrari 296 GT3', '2025', NULL, (SELECT id FROM public.races WHERE name = '24 horas de Daytona' LIMIT 1), '9', 'GT3 PRO'),
-('12 horas de Bathurst', '13 lugar com Acura NSX GT3 EVO 22 (Split 8)', '2025', NULL, (SELECT id FROM public.races WHERE name = '12 horas de Bathurst' LIMIT 1), '13', 'GT3 PRO'),
-('12 horas de Sebring', '17 lugar com Mercedes AMG GT3 2020 (Split 7)', '2025', NULL, (SELECT id FROM public.races WHERE name = '12 horas de Sebring' LIMIT 1), '17', 'GT3 PRO'),
-('12 horas de SPA', '2 lugar em ambos splits com o BMW M4 GT3 (Split 1 e Split 8)', '2025', NULL, (SELECT id FROM public.races WHERE name = '12 horas de SPA' LIMIT 1), '2', 'GT3 PRO'),
-('24 horas de Nurburgring', 'Equipa 1 - P7 // Equipa 2 - P13 (Split 3 e Split 11)', '2025', NULL, (SELECT id FROM public.races WHERE name = '24 horas de Nurburgring' LIMIT 1), '7', 'GT3 PRO'),
-('24 horas de Le Mans', '12 lugar com o Mercedes AMG GT3 2020 (Split 5)', '2025', NULL, (SELECT id FROM public.races WHERE name = '24 horas de Le Mans' LIMIT 1), '12', 'GT3 PRO'),
-('24 horas de SPA', 'DNF com o BMW M4 GT3 (Split 2)', '2025', NULL, (SELECT id FROM public.races WHERE name = '24 horas de SPA' LIMIT 1), 'DNF', 'GT3 PRO'),
-('6 horas de Indy', 'P20 com o Audi R8 GT3 (Split 4)', '2025', NULL, (SELECT id FROM public.races WHERE name = '6 horas de Indy' LIMIT 1), '20', 'GT3 PRO'),
-('10 horas de Petit Le Mans', 'Equipa 1 - P6 // Equipa 2 - P11 // Equipa 3 - P4 (Split 1 e Split 11)', '2025', NULL, (SELECT id FROM public.races WHERE name = '10 horas de Petit Le Mans' AND track = 'Road Atlanta' AND date::text LIKE '2025%' LIMIT 1), '4', 'GT3 PRO'),
-('24 horas de Barcelona', 'Equipa 1 - P13 (Split 2)', '2025', NULL, (SELECT id FROM public.races WHERE name = '24 horas de Barcelona' LIMIT 1), '13', 'GT3 PRO'),
-('24 horas de Spa-Francorchamps', 'Equipa 1 - P11 (Split 1)', '2025', NULL, (SELECT id FROM public.races WHERE name = '24 horas de Spa-Francorchamps' LIMIT 1), '11', 'GT3 PRO'),
+('24 horas de Daytona', '9 lugar com Ferrari 296 GT3', '2025', NULL, (SELECT id FROM public.races WHERE name = '24 horas de Daytona' LIMIT 1), '9', 'GT3 PRO', NULL),
+('12 horas de Bathurst', '13 lugar com Acura NSX GT3 EVO 22', '2025', NULL, (SELECT id FROM public.races WHERE name = '12 horas de Bathurst' LIMIT 1), '13', 'GT3 PRO', '8'),
+('12 horas de Sebring', '17 lugar com Mercedes AMG GT3 2020', '2025', NULL, (SELECT id FROM public.races WHERE name = '12 horas de Sebring' LIMIT 1), '17', 'GT3 PRO', '7'),
+('12 horas de SPA', '2 lugar em ambos splits com o BMW M4 GT3', '2025', NULL, (SELECT id FROM public.races WHERE name = '12 horas de SPA' LIMIT 1), '2', 'GT3 PRO', '1/8'),
+('24 horas de Nurburgring', 'Equipa 1 - P7 // Equipa 2 - P13', '2025', NULL, (SELECT id FROM public.races WHERE name = '24 horas de Nurburgring' LIMIT 1), '7', 'GT3 PRO', '3/11'),
+('24 horas de Le Mans', '12 lugar com o Mercedes AMG GT3 2020', '2025', NULL, (SELECT id FROM public.races WHERE name = '24 horas de Le Mans' LIMIT 1), '12', 'GT3 PRO', '5'),
+('24 horas de SPA', 'DNF com o BMW M4 GT3', '2025', NULL, (SELECT id FROM public.races WHERE name = '24 horas de SPA' LIMIT 1), 'DNF', 'GT3 PRO', '2'),
+('6 horas de Indy', 'P20 com o Audi R8 GT3', '2025', NULL, (SELECT id FROM public.races WHERE name = '6 horas de Indy' LIMIT 1), '20', 'GT3 PRO', '4'),
+('10 horas de Petit Le Mans', 'Equipa 1 - P6 // Equipa 2 - P11 // Equipa 3 - P4', '2025', NULL, (SELECT id FROM public.races WHERE name = '10 horas de Petit Le Mans' AND track = 'Road Atlanta' AND date::text LIKE '2025%' LIMIT 1), '4', 'GT3 PRO', '1/11'),
+('24 horas de Barcelona', 'Equipa 1 - P13', '2025', NULL, (SELECT id FROM public.races WHERE name = '24 horas de Barcelona' LIMIT 1), '13', 'GT3 PRO', '2'),
+('24 horas de Spa-Francorchamps', 'Equipa 1 - P11', '2025', NULL, (SELECT id FROM public.races WHERE name = '24 horas de Spa-Francorchamps' LIMIT 1), '11', 'GT3 PRO', '1'),
 -- 2026
-('24h Daytona VSCA Championship 2026', 'GT3 PRO - P8 // LMP2 - DQ (VSCA)', '2026', NULL, (SELECT id FROM public.races WHERE name = 'Roar Before The 24' LIMIT 1), '8', 'GT3 PRO');
+('24h Daytona VSCA Championship 2026', 'GT3 PRO - P8 // LMP2 - DQ (VSCA)', '2026', NULL, (SELECT id FROM public.races WHERE name = 'Roar Before The 24' LIMIT 1), '8', 'GT3 PRO', NULL);
 
 -- Insert FAQ entries
 INSERT INTO public.faq (question, answer, order_index) VALUES
@@ -396,11 +447,11 @@ INSERT INTO public.race_events (race_id, lap, description, event_type, position,
 -- Insert qualifying results (resultados de qualificação)
 -- 24 horas de Daytona - LMP2
 INSERT INTO public.qualifying_results (race_id, driver_id, lap_time, position) VALUES
-((SELECT id FROM public.races WHERE name = '24h Daytona VSCA Championship 2026' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'Afonso Reis' LIMIT 1), '1:35.456', "DNF"),
+((SELECT id FROM public.races WHERE name = '24h Daytona VSCA Championship 2026' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'Afonso Reis' LIMIT 1), '1:35.456', 10),
 
 -- 24 horas de Daytona - GT3 PRO
 INSERT INTO public.qualifying_results (race_id, driver_id, lap_time, position) VALUES
-((SELECT id FROM public.races WHERE name = '24h Daytona VSCA Championship 2026' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'Rodrigo Marreiros' LIMIT 1), '1:46.234', "16"),
+((SELECT id FROM public.races WHERE name = '24h Daytona VSCA Championship 2026' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'Rodrigo Marreiros' LIMIT 1), '1:46.234', 16),
 
 -- 6 horas de SPA - Francorchamps - GT3 PRO
 INSERT INTO public.qualifying_results (race_id, driver_id, lap_time, position) VALUES
@@ -419,6 +470,18 @@ INSERT INTO public.qualifying_results (race_id, driver_id, lap_time, position) V
 ((SELECT id FROM public.races WHERE name = '6 horas de Interlagos' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'Rodrigo Marreiros' LIMIT 1), '1:33.456', 6),
 ((SELECT id FROM public.races WHERE name = '6 horas de Interlagos' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'José Barbosa' LIMIT 1), '1:33.789', 7),
 ((SELECT id FROM public.races WHERE name = '6 horas de Interlagos' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'Marco Vilela' LIMIT 1), '1:34.123', 8);
+
+-- 12 horas de Bathurst - GT3 PRO
+INSERT INTO public.qualifying_results (race_id, driver_id, lap_time, position) VALUES
+((SELECT id FROM public.races WHERE name = '12 horas de Bathurst' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'Marco Vilela' LIMIT 1), '2:04.567', 15),
+((SELECT id FROM public.races WHERE name = '12 horas de Bathurst' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'José Barbosa' LIMIT 1), '2:04.890', 16),
+((SELECT id FROM public.races WHERE name = '12 horas de Bathurst' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'Rodrigo Marreiros' LIMIT 1), '2:05.234', 17);
+
+-- 12 horas de Sebring - GT3 PRO
+INSERT INTO public.qualifying_results (race_id, driver_id, lap_time, position) VALUES
+((SELECT id FROM public.races WHERE name = '12 horas de Sebring' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'Rodrigo Marreiros' LIMIT 1), '1:56.789', 18),
+((SELECT id FROM public.races WHERE name = '12 horas de Sebring' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'Marco Vilela' LIMIT 1), '1:57.123', 19),
+((SELECT id FROM public.races WHERE name = '12 horas de Sebring' LIMIT 1), (SELECT id FROM public.drivers WHERE name = 'José Barbosa' LIMIT 1), '1:57.456', 20);
 
 -- Insert images (imagens armazenadas no Supabase Storage)
 -- 24h Daytona VSCA Championship 2026 - Weather Forecast
@@ -457,3 +520,35 @@ INSERT INTO public.track_info (race_id, weather_description, weather_image_id, t
 -- 12 horas de Sebring
 INSERT INTO public.track_info (race_id, weather_description, weather_image_id, track_map_id) VALUES
 ((SELECT id FROM public.races WHERE name = '12 horas de Sebring' LIMIT 1), 'Tempo quente e úmido, temperatura 30°C. Possibilidade de chuva no final da prova.', NULL, NULL);
+
+-- 12 horas de SPA
+INSERT INTO public.track_info (race_id, weather_description, weather_image_id, track_map_id) VALUES
+((SELECT id FROM public.races WHERE name = '12 horas de SPA' LIMIT 1), 'Condições variáveis. Temperatura 16°C com chuva intermitente.', NULL, NULL);
+
+-- 24 horas de Nurburgring
+INSERT INTO public.track_info (race_id, weather_description, weather_image_id, track_map_id) VALUES
+((SELECT id FROM public.races WHERE name = '24 horas de Nurburgring' LIMIT 1), 'Condições desafiadoras no Nordschleife. Neblina e temperatura 12°C.', NULL, NULL);
+
+-- 24 horas de Le Mans
+INSERT INTO public.track_info (race_id, weather_description, weather_image_id, track_map_id) VALUES
+((SELECT id FROM public.races WHERE name = '24 horas de Le Mans' LIMIT 1), 'Tempo variável. Temperatura 20°C com possibilidade de chuva.', NULL, NULL);
+
+-- 24 horas de SPA
+INSERT INTO public.track_info (race_id, weather_description, weather_image_id, track_map_id) VALUES
+((SELECT id FROM public.races WHERE name = '24 horas de SPA' LIMIT 1), 'Condições típicas de Spa. Chuva prevista durante a noite.', NULL, NULL);
+
+-- 6 horas de Indy
+INSERT INTO public.track_info (race_id, weather_description, weather_image_id, track_map_id) VALUES
+((SELECT id FROM public.races WHERE name = '6 horas de Indy' LIMIT 1), 'Tempo seco e quente. Temperatura 27°C.', NULL, NULL);
+
+-- 10 horas de Petit Le Mans (2025)
+INSERT INTO public.track_info (race_id, weather_description, weather_image_id, track_map_id) VALUES
+((SELECT id FROM public.races WHERE name = '10 horas de Petit Le Mans' AND track = 'Road Atlanta' AND date::text LIKE '2025%' LIMIT 1), 'Condições secas. Temperatura 24°C durante toda a prova.', NULL, NULL);
+
+-- 24 horas de Barcelona
+INSERT INTO public.track_info (race_id, weather_description, weather_image_id, track_map_id) VALUES
+((SELECT id FROM public.races WHERE name = '24 horas de Barcelona' LIMIT 1), 'Tempo seco. Temperatura 22°C.', NULL, NULL);
+
+-- 24 horas de Spa-Francorchamps
+INSERT INTO public.track_info (race_id, weather_description, weather_image_id, track_map_id) VALUES
+((SELECT id FROM public.races WHERE name = '24 horas de Spa-Francorchamps' LIMIT 1), 'Condições mistas com chuva. Temperatura 14°C.', NULL, NULL);

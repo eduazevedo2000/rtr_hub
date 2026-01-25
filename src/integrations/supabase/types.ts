@@ -133,6 +133,7 @@ export type Database = {
           track: string
           position_finished: string | null
           category: string | null
+          split: string | null
         }
         Insert: {
           created_at?: string
@@ -143,6 +144,7 @@ export type Database = {
           track: string
           position_finished?: string | null
           category?: string | null
+          split?: string | null
         }
         Update: {
           created_at?: string
@@ -153,6 +155,7 @@ export type Database = {
           track?: string
           position_finished?: string | null
           category?: string | null
+          split?: string | null
         }
         Relationships: []
       }
@@ -167,6 +170,7 @@ export type Database = {
           race_id: string | null
           position_finished: string | null
           category: string | null
+          split: string | null
         }
         Insert: {
           created_at?: string
@@ -178,6 +182,7 @@ export type Database = {
           race_id?: string | null
           position_finished?: string | null
           category?: string | null
+          split?: string | null
         }
         Update: {
           created_at?: string
@@ -189,6 +194,7 @@ export type Database = {
           race_id?: string | null
           position_finished?: string | null
           category?: string | null
+          split?: string | null
         }
         Relationships: [
           {
@@ -290,19 +296,67 @@ export type Database = {
           id: string
           created_at: string
           name: string
-          category: string
+          known_as: string | null
+          category: string | null
+          instagram: string | null
+          image_url: string | null
         }
         Insert: {
           id?: string
           created_at?: string
           name: string
-          category: string
+          known_as?: string | null
+          category?: string | null
+          instagram?: string | null
+          image_url?: string | null
         }
         Update: {
           id?: string
           created_at?: string
           name?: string
-          category?: string
+          known_as?: string | null
+          category?: string | null
+          instagram?: string | null
+          image_url?: string | null
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          id: string
+          name: string
+        }
+        Insert: {
+          id?: string
+          name: string
+        }
+        Update: {
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      event_types: {
+        Row: {
+          id: string
+          value: string
+          label: string
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          value: string
+          label: string
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          value?: string
+          label?: string
+          order_index?: number
+          created_at?: string
         }
         Relationships: []
       }
@@ -324,6 +378,7 @@ export type Database = {
         | "driver_change"
         | "restart"
         | "finish"
+        | "qualification"
         | "other"
     }
     CompositeTypes: {
@@ -462,6 +517,7 @@ export const Constants = {
         "driver_change",
         "restart",
         "finish",
+        "qualification",
         "other",
       ],
     },

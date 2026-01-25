@@ -1,5 +1,8 @@
 import { motion } from "framer-motion";
-import { Flag, Fuel, AlertTriangle, Users, Play, Clock } from "lucide-react";
+import { Flag, Fuel, AlertTriangle, Users, Play, Clock, Edit, Timer } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import type { Database } from "@/integrations/supabase/types";
 
 type RaceEvent = Database["public"]["Tables"]["race_events"]["Row"];
@@ -14,6 +17,7 @@ const eventTypeConfig: Record<string, { icon: typeof Flag; className: string; la
   driver_change: { icon: Users, className: "event-pit", label: "Troca Piloto" },
   restart: { icon: Flag, className: "event-green", label: "Restart" },
   finish: { icon: Flag, className: "event-green", label: "Fim" },
+  qualification: { icon: Timer, className: "event-pit", label: "Qualificação" },
   other: { icon: Clock, className: "event-pit", label: "Outro" },
 };
 
@@ -25,6 +29,26 @@ interface RaceEventCardProps {
 export function RaceEventCard({ event, index }: RaceEventCardProps) {
   const config = eventTypeConfig[event.event_type] || eventTypeConfig.other;
   const Icon = config.icon;
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleEdit = () => {
+    navigate("/admin", {
+      state: {
+        editEvent: {
+          id: event.id,
+          race_id: event.race_id,
+          lap: event.lap.toString(),
+          description: event.description,
+          event_type: event.event_type,
+          position: event.position || "",
+          driver: event.driver || "",
+          clip_url: event.clip_url || "",
+          category: event.category || "",
+        },
+      },
+    });
+  };
 
   return (
     <motion.div
@@ -74,11 +98,24 @@ export function RaceEventCard({ event, index }: RaceEventCardProps) {
           )}
         </div>
         
-        <div className="text-xs text-muted-foreground whitespace-nowrap">
-          {new Date(event.created_at).toLocaleTimeString("pt-PT", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
+        <div className="flex items-center gap-2">
+          <div className="text-xs text-muted-foreground whitespace-nowrap">
+            {new Date(event.created_at).toLocaleTimeString("pt-PT", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </div>
+          {user && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 hover:bg-primary/20"
+              onClick={handleEdit}
+              title="Editar ocorrência"
+            >
+              <Edit className="h-3 w-3 text-muted-foreground hover:text-primary" />
+            </Button>
+          )}
         </div>
       </div>
     </motion.div>

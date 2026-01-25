@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, Flag, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,38 +21,90 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Race = Database["public"]["Tables"]["races"]["Row"];
 type RaceEventType = Database["public"]["Enums"]["race_event_type"];
-
-const eventTypes: { value: RaceEventType; label: string }[] = [
-  { value: "race_start", label: "🏁 Partida" },
-  { value: "pit_stop", label: "⛽ Pit Stop" },
-  { value: "position_change", label: "📊 Mudança de Posição" },
-  { value: "fcy_short", label: "🟡 Short FCY" },
-  { value: "fcy_long", label: "🟡 Long FCY" },
-  { value: "incident", label: "⚠️ Incidente" },
-  { value: "driver_change", label: "👥 Troca de Piloto" },
-  { value: "restart", label: "🟢 Restart" },
-  { value: "finish", label: "🏆 Fim de Corrida" },
-  { value: "other", label: "📝 Outro" },
-];
+type Category = Database["public"]["Tables"]["categories"]["Row"];
+type EventType = Database["public"]["Tables"]["event_types"]["Row"];
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [races, setRaces] = useState<Race[]>([]);
   const [selectedRace, setSelectedRace] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [eventTypes, setEventTypes] = useState<EventType[]>([]);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+
+  // Initialize form state - check location.state for edit event
+  const getInitialFormState = () => {
+    const editEvent = (location.state as any)?.editEvent;
+    if (editEvent) {
+      return {
+        lap: editEvent.lap,
+        description: editEvent.description,
+        event_type: editEvent.event_type,
+        position: editEvent.position || "",
+        driver: editEvent.driver || "",
+        clip_url: editEvent.clip_url || "",
+        category: editEvent.category || "GERAL",
+      };
+    }
+    return {
+      lap: "",
+      description: "",
+      event_type: "other" as RaceEventType,
+      position: "",
+      driver: "",
+      clip_url: "",
+      category: "GERAL",
+    };
+  };
 
   // Event form state
-  const [eventForm, setEventForm] = useState({
-    lap: "",
-    description: "",
-    event_type: "other" as RaceEventType,
-    position: "",
-    driver: "",
-    clip_url: "",
-  });
+  const [eventForm, setEventForm] = useState(getInitialFormState);
+
+  const getCategories = async () => {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*");
+
+    if (error) {
+      console.error("Error fetching categories:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar as categorias.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (data) {
+      setCategories(data);
+    }
+  };
+
+  const getEventTypes = async () => {
+    const { data, error } = await supabase
+      .from("event_types")
+      .select("*")
+      .order("order_index", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching event types:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os tipos de evento.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (data) {
+      setEventTypes(data);
+    }
+  };
 
   // New race form state
   const [showNewRace, setShowNewRace] = useState(false);
@@ -78,14 +130,44 @@ export default function Admin() {
 
       if (!error && data) {
         setRaces(data);
-        const active = data.find((r) => r.is_active);
-        if (active) setSelectedRace(active.id);
+        
+        // Check if we're editing an event from location state
+        const editEvent = (location.state as any)?.editEvent;
+        if (editEvent) {
+          setEditingEventId(editEvent.id);
+          setSelectedRace(editEvent.race_id);
+          // Only update form if values are different to avoid unnecessary re-renders
+          setEventForm((prev) => {
+            if (prev.category === editEvent.category && 
+                prev.lap === editEvent.lap &&
+                prev.description === editEvent.description) {
+              return prev; // No change needed
+            }
+            return {
+              lap: editEvent.lap,
+              description: editEvent.description,
+              event_type: editEvent.event_type,
+              position: editEvent.position || "",
+              driver: editEvent.driver || "",
+              clip_url: editEvent.clip_url || "",
+              category: editEvent.category || "GERAL",
+            };
+          });
+          // Clear the state to avoid re-applying on re-render
+          window.history.replaceState({}, document.title);
+        } else {
+          // Only set active race if not editing
+          const active = data.find((r) => r.is_active);
+          if (active && !selectedRace) setSelectedRace(active.id);
+        }
       }
       setLoading(false);
+      getCategories();
+      getEventTypes();
     };
 
     if (user) fetchRaces();
-  }, [user]);
+  }, [user, location.state]);
 
   const handleCreateRace = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,15 +214,78 @@ export default function Admin() {
 
     setSubmitting(true);
 
+    // Se estiver editando, atualiza a ocorrência existente
+    if (editingEventId) {
+      const { error } = await supabase
+        .from("race_events")
+        .update({
+          lap: parseInt(eventForm.lap),
+          description: eventForm.description,
+          event_type: eventForm.event_type,
+          position: eventForm.position ? eventForm.position.toUpperCase() : null,
+          driver: eventForm.driver || null,
+          clip_url: eventForm.clip_url || null,
+          category: eventForm.category || null,
+        })
+        .eq("id", editingEventId);
+
+      setSubmitting(false);
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: error.message,
+        });
+      } else {
+        setEditingEventId(null);
+        setEventForm({
+          lap: "",
+          description: "",
+          event_type: "other",
+          position: "",
+          driver: "",
+          clip_url: "",
+          category: "GERAL",
+        });
+
+        if (eventForm.event_type === "finish") {
+          const { error } = await supabase
+            .from("races")
+            .update({
+              position_finished: eventForm.position,
+              is_active: false,
+            })
+            .eq("id", selectedRace);
+
+          if (error) {
+            toast({
+              variant: "destructive",
+              title: "Erro",
+              description: error.message,
+            });
+          }
+
+          toast({ title: "Corrida finalizada!" });
+        }
+        else {
+          toast({ title: "Ocorrência atualizada!" });
+        }
+      }
+      return;
+    }
+
+    // Cria uma única ocorrência com a categoria selecionada (incluindo "GERAL")
     const { error } = await supabase.from("race_events").insert([
       {
         race_id: selectedRace,
         lap: parseInt(eventForm.lap),
         description: eventForm.description,
         event_type: eventForm.event_type,
-        position: eventForm.position || null,
+        position: eventForm.position ? eventForm.position.toUpperCase() : null,
         driver: eventForm.driver || null,
         clip_url: eventForm.clip_url || null,
+        category: eventForm.category || null,
       },
     ]);
 
@@ -153,15 +298,38 @@ export default function Admin() {
         description: error.message,
       });
     } else {
-      toast({ title: "Ocorrência adicionada!" });
-      setEventForm({
-        lap: eventForm.lap, // Keep the lap for convenience
-        description: "",
-        event_type: "other",
-        position: "",
-        driver: "",
-        clip_url: "",
-      });
+        setEventForm({
+          lap: eventForm.lap,
+          description: "",
+          event_type: "other",
+          position: "",
+          driver: "",
+          clip_url: "",
+          category: "GERAL",
+        });
+        
+        if (eventForm.event_type === "finish") {
+          const { error } = await supabase
+            .from("races")
+            .update({
+              position_finished: eventForm.position,
+              is_active: false,
+            })
+            .eq("id", selectedRace);
+
+          if (error) {
+            toast({
+              variant: "destructive",
+              title: "Erro",
+              description: error.message,
+            });
+          }
+
+          toast({ title: "Corrida finalizada!" });
+        }
+        else {
+          toast({ title: "Ocorrência atualizada!" });
+        }
     }
   };
 
@@ -276,9 +444,33 @@ export default function Admin() {
 
           {/* Add Event Form */}
           <div className="card-racing p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <Flag className="h-5 w-5 text-primary" />
-              <h2 className="font-racing text-lg">Adicionar Ocorrência</h2>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Flag className="h-5 w-5 text-primary" />
+                <h2 className="font-racing text-lg">
+                  {editingEventId ? "Editar Ocorrência" : "Adicionar Ocorrência"}
+                </h2>
+              </div>
+              {editingEventId && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingEventId(null);
+                    setEventForm({
+                      lap: "",
+                      description: "",
+                      event_type: "other",
+                      position: "",
+                      driver: "",
+                      clip_url: "",
+                      category: "",
+                    });
+                  }}
+                >
+                  Cancelar Edição
+                </Button>
+              )}
             </div>
 
             <form onSubmit={handleCreateEvent} className="space-y-4">
@@ -299,6 +491,26 @@ export default function Admin() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="lap">Categoria</Label>
+                  <Select
+                    value={eventForm.category || "GERAL"}
+                    onValueChange={(v) =>
+                      setEventForm({ ...eventForm, category: v as string })
+                    }
+                  >
+                    <SelectTrigger className="bg-secondary">
+                      <SelectValue placeholder="Selecionar categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="eventType">Tipo de Evento</Label>
                   <Select
                     value={eventForm.event_type}
@@ -307,11 +519,11 @@ export default function Admin() {
                     }
                   >
                     <SelectTrigger className="bg-secondary">
-                      <SelectValue />
+                      <SelectValue placeholder="Selecionar tipo" />
                     </SelectTrigger>
                     <SelectContent>
                       {eventTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
+                        <SelectItem key={type.id} value={type.value}>
                           {type.label}
                         </SelectItem>
                       ))}
@@ -384,8 +596,17 @@ export default function Admin() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar Ocorrência
+                    {editingEventId ? (
+                      <>
+                        <Flag className="h-4 w-4 mr-2" />
+                        Atualizar Ocorrência
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Adicionar Ocorrência
+                      </>
+                    )}
                   </>
                 )}
               </Button>

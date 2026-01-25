@@ -83,7 +83,7 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
   }
 
   return (
-    <div className="card-racing overflow-hidden">
+    <div className="card-racing overflow-hidden border-l-4 border-l-primary/40 bg-primary/[0.04]">
       <div className="p-4 border-b border-border">
         <h3 className="font-racing text-sm uppercase tracking-wider">Qualificação</h3>
       </div>
@@ -107,7 +107,7 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
               {result.position !== 'DNF' ? `P${result.position}` : result.position}
             </span>
             <div className="flex-1">
-              <p className="font-medium">{result.driver?.name || "—"}</p>
+              <p className="font-racing text-sm text-muted-foreground">{result.driver?.name || "—"}</p>
             </div>
             <p className="font-racing text-sm text-muted-foreground">
               {result.driver?.category || "—"}
