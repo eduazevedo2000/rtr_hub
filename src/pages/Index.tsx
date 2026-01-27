@@ -1,21 +1,48 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Flag, Clock, Users, Trophy } from "lucide-react";
+import { Flag, Clock, Users, Trophy, Car, Layers, Cloud, Sun, CloudRain, Edit, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { RaceEventsList } from "@/components/race/RaceEventsList";
 import { QualifyingTable } from "@/components/race/QualifyingTable";
 import { TrackInfo } from "@/components/race/TrackInfo";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Database } from "@/integrations/supabase/types";
 
 type Race = Database["public"]["Tables"]["races"]["Row"];
 
 const Index = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [activeRace, setActiveRace] = useState<Race | null>(null);
   const [loading, setLoading] = useState(true);
-  const [racesCount, setRacesCount] = useState(0);
-  const [victoriesCount, setVictoriesCount] = useState(0);
-  const [driversCount, setDriversCount] = useState(0);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    track: "",
+    num_cars: "",
+    num_classes: "",
+    weather: "",
+  });
 
   useEffect(() => {
     const fetchActiveRace = async () => {
@@ -47,44 +74,55 @@ const Index = () => {
       setLoading(false);
     };
 
-    const fetchRacesCount = async () => {
-      const { data, error } = await supabase
-        .from("races")
-        .select("count")
-        .single();
-
-      if (!error && data) {
-        setRacesCount(data.count);
-      }
-    };
-
-    const fetchVictoriesCount = async () => {
-      const { data, error } = await supabase
-        .from("races")
-        .select("count")
-        .eq("position_finished", "1");
-
-      if (!error && data) {
-        setVictoriesCount(data[0].count);
-      }
-    };
-
-    const fetchDriversCount = async () => {
-      const { data, error } = await supabase
-        .from("drivers")
-        .select("count")
-
-      if (!error && data) {
-        setDriversCount(data[0].count);
-      }
-    };
-
     fetchActiveRace();
-    fetchRacesCount();
-    fetchVictoriesCount();
-    fetchDriversCount();
   }, []);
-  
+
+  const openEditDialog = () => {
+    if (!activeRace) return;
+    setEditForm({
+      name: activeRace.name,
+      track: activeRace.track,
+      num_cars: activeRace.num_cars?.toString() || "",
+      num_classes: activeRace.num_classes?.toString() || "",
+      weather: activeRace.weather || "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateRace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeRace) return;
+
+    setSubmitting(true);
+    const updateData = {
+      name: editForm.name,
+      track: editForm.track,
+      num_cars: editForm.num_cars ? parseInt(editForm.num_cars, 10) : null,
+      num_classes: editForm.num_classes ? parseInt(editForm.num_classes, 10) : null,
+      weather: editForm.weather || null,
+    };
+
+    const { data, error } = await supabase
+      .from("races")
+      .update(updateData)
+      .eq("id", activeRace.id)
+      .select()
+      .single();
+
+    setSubmitting(false);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error.message,
+      });
+    } else {
+      toast({ title: "Corrida atualizada!" });
+      setActiveRace(data);
+      setEditDialogOpen(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,8 +159,19 @@ const Index = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-6 px-6 py-4 rounded-xl bg-card border border-border"
+                className="relative inline-flex items-center gap-6 px-6 py-4 rounded-xl bg-card border border-border"
               >
+                {user && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-card border border-border hover:bg-primary/20"
+                    onClick={openEditDialog}
+                    title="Editar corrida"
+                  >
+                    <Edit className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                  </Button>
+                )}
                 <div className="text-left">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Corrida</p>
                   <p className="font-racing font-bold">{activeRace.name}</p>
@@ -142,24 +191,56 @@ const Index = () => {
       <section className="border-b border-border bg-card/50">
         <div className="container py-6">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              { icon: Flag, label: "Corridas", value: racesCount },
-              { icon: Trophy, label: "Vitórias", value: victoriesCount },
-              { icon: Users, label: "Pilotos", value: driversCount },
-              // { icon: Clock, label: "Horas", value: "120+" },
-            ].map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 * index }}
-                className="text-center"
-              >
-                <stat.icon className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <p className="font-racing text-2xl font-bold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-              </motion.div>
-            ))}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * 0 }}
+              className="text-center"
+            >
+              <Car className="h-5 w-5 mx-auto mb-2 text-primary" />
+              <p className="font-racing text-2xl font-bold">{activeRace?.num_cars ?? "—"}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Carros</p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * 1 }}
+              className="text-center"
+            >
+              <Layers className="h-5 w-5 mx-auto mb-2 text-primary" />
+              <p className="font-racing text-2xl font-bold">{activeRace?.num_classes ?? "—"}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                {activeRace?.num_classes === 1 ? "Classe" : "Classes"}
+              </p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * 2 }}
+              className="text-center"
+            >
+              {activeRace?.weather ? (
+                (() => {
+                  const WeatherIcon =
+                    activeRace.weather === "sol"
+                      ? Sun
+                      : activeRace.weather === "chuva"
+                        ? CloudRain
+                        : Cloud;
+                  return <WeatherIcon className="h-5 w-5 mx-auto mb-2 text-primary" />;
+                })()
+              ) : (
+                <Cloud className="h-5 w-5 mx-auto mb-2 text-primary" />
+              )}
+              {activeRace?.weather ? (
+                <p className="font-racing text-2xl font-bold capitalize">
+                  {activeRace.weather}
+                </p>
+              ) : (
+                <p className="font-racing text-2xl font-bold">—</p>
+              )}
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Metereologia</p>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -194,6 +275,101 @@ const Index = () => {
           </p>
         </div>
       </footer>
+
+      {/* Edit Race Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-racing">Editar Corrida</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateRace} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-race-name">Nome da Corrida</Label>
+                <Input
+                  id="edit-race-name"
+                  value={editForm.name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, name: e.target.value })
+                  }
+                  required
+                  className="bg-secondary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-race-track">Pista</Label>
+                <Input
+                  id="edit-race-track"
+                  value={editForm.track}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, track: e.target.value })
+                  }
+                  required
+                  className="bg-secondary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-num-cars">Número de Carros</Label>
+                <Input
+                  id="edit-num-cars"
+                  type="number"
+                  min="0"
+                  value={editForm.num_cars}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, num_cars: e.target.value })
+                  }
+                  className="bg-secondary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-num-classes">Número de Classes</Label>
+                <Input
+                  id="edit-num-classes"
+                  type="number"
+                  min="0"
+                  value={editForm.num_classes}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, num_classes: e.target.value })
+                  }
+                  className="bg-secondary"
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="edit-weather">Tempo</Label>
+                <Select
+                  value={editForm.weather}
+                  onValueChange={(value) =>
+                    setEditForm({ ...editForm, weather: value })
+                  }
+                >
+                  <SelectTrigger className="bg-secondary">
+                    <SelectValue placeholder="Selecionar tempo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sol">Sol</SelectItem>
+                    <SelectItem value="chuva">Chuva</SelectItem>
+                    <SelectItem value="nublado">Nublado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+                disabled={submitting}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Guardar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

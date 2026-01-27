@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, Flag, Loader2, Trash2 } from "lucide-react";
@@ -23,6 +23,7 @@ type Race = Database["public"]["Tables"]["races"]["Row"];
 type RaceEventType = Database["public"]["Enums"]["race_event_type"];
 type Category = Database["public"]["Tables"]["categories"]["Row"];
 type EventType = Database["public"]["Tables"]["event_types"]["Row"];
+type Driver = Database["public"]["Tables"]["drivers"]["Row"];
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
@@ -35,6 +36,7 @@ export default function Admin() {
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
   // Initialize form state - check location.state for edit event
@@ -64,6 +66,10 @@ export default function Admin() {
 
   // Event form state
   const [eventForm, setEventForm] = useState(getInitialFormState);
+  
+  // Position fields for finishing race (when category is GERAL, need 2 positions)
+  const [positionLMP2, setPositionLMP2] = useState("");
+  const [positionGT3PRO, setPositionGT3PRO] = useState("");
 
   const getCategories = async () => {
     const { data, error } = await supabase
@@ -106,12 +112,31 @@ export default function Admin() {
     }
   };
 
+  const getDrivers = async () => {
+    const { data, error } = await supabase
+      .from("drivers")
+      .select("*")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching drivers:", error);
+      return;
+    }
+
+    if (data) {
+      setDrivers(data);
+    }
+  };
+
   // New race form state
   const [showNewRace, setShowNewRace] = useState(false);
   const [newRaceForm, setNewRaceForm] = useState({
     name: "",
     track: "",
     is_active: true,
+    num_cars: "",
+    num_classes: "",
+    weather: "",
   });
 
   useEffect(() => {
@@ -164,6 +189,7 @@ export default function Admin() {
       setLoading(false);
       getCategories();
       getEventTypes();
+      getDrivers();
     };
 
     if (user) fetchRaces();
@@ -178,9 +204,18 @@ export default function Admin() {
       await supabase.from("races").update({ is_active: false }).eq("is_active", true);
     }
 
+    const raceData = {
+      name: newRaceForm.name,
+      track: newRaceForm.track,
+      is_active: newRaceForm.is_active,
+      num_cars: newRaceForm.num_cars ? parseInt(newRaceForm.num_cars, 10) : null,
+      num_classes: newRaceForm.num_classes ? parseInt(newRaceForm.num_classes, 10) : null,
+      weather: newRaceForm.weather || null,
+    };
+
     const { data, error } = await supabase
       .from("races")
-      .insert([newRaceForm])
+      .insert([raceData])
       .select()
       .single();
 
@@ -197,7 +232,7 @@ export default function Admin() {
       setRaces([data, ...races]);
       setSelectedRace(data.id);
       setShowNewRace(false);
-      setNewRaceForm({ name: "", track: "", is_active: true });
+      setNewRaceForm({ name: "", track: "", is_active: true, num_cars: "", num_classes: "", weather: "" });
     }
   };
 
@@ -248,29 +283,10 @@ export default function Admin() {
           clip_url: "",
           category: "GERAL",
         });
+        setPositionLMP2("");
+        setPositionGT3PRO("");
 
-        if (eventForm.event_type === "finish") {
-          const { error } = await supabase
-            .from("races")
-            .update({
-              position_finished: eventForm.position,
-              is_active: false,
-            })
-            .eq("id", selectedRace);
-
-          if (error) {
-            toast({
-              variant: "destructive",
-              title: "Erro",
-              description: error.message,
-            });
-          }
-
-          toast({ title: "Corrida finalizada!" });
-        }
-        else {
-          toast({ title: "Ocorrência atualizada!" });
-        }
+        toast({ title: "Ocorrência atualizada!" });
       }
       return;
     }
@@ -308,11 +324,88 @@ export default function Admin() {
           category: "GERAL",
         });
         
+        // Reset position fields
+        setPositionLMP2("");
+        setPositionGT3PRO("");
+        
         if (eventForm.event_type === "finish") {
+          // Get race info for achievement
+          const { data: raceData } = await supabase
+            .from("races")
+            .select("name, track, date")
+            .eq("id", selectedRace)
+            .single();
+
+          if (raceData) {
+            // Create achievement
+            const { data: achievementData, error: achievementError } = await supabase
+              .from("team_achievements")
+              .insert([
+                {
+                  title: raceData.name,
+                  description: eventForm.description || null,
+                  date: new Date(raceData.date).getFullYear().toString(),
+                  race_id: selectedRace,
+                },
+              ])
+              .select()
+              .single();
+
+            if (achievementError) {
+              toast({
+                variant: "destructive",
+                title: "Erro",
+                description: achievementError.message,
+              });
+            } else if (achievementData) {
+              // Insert positions based on category
+              const positionsToInsert = [];
+              
+              if (eventForm.category === "GERAL") {
+                // Insert both LMP2 and GT3 PRO positions
+                if (positionLMP2) {
+                  positionsToInsert.push({
+                    achievement_id: achievementData.id,
+                    category: "LMP2",
+                    position_finished: positionLMP2.toUpperCase(),
+                  });
+                }
+                if (positionGT3PRO) {
+                  positionsToInsert.push({
+                    achievement_id: achievementData.id,
+                    category: "GT3 PRO",
+                    position_finished: positionGT3PRO.toUpperCase(),
+                  });
+                }
+              } else if (eventForm.category && eventForm.position) {
+                // Insert single position for selected category
+                positionsToInsert.push({
+                  achievement_id: achievementData.id,
+                  category: eventForm.category,
+                  position_finished: eventForm.position.toUpperCase(),
+                });
+              }
+
+              if (positionsToInsert.length > 0) {
+                const { error: positionsError } = await supabase
+                  .from("achievement_positions")
+                  .insert(positionsToInsert);
+
+                if (positionsError) {
+                  toast({
+                    variant: "destructive",
+                    title: "Erro",
+                    description: positionsError.message,
+                  });
+                }
+              }
+            }
+          }
+
+          // Update race to inactive
           const { error } = await supabase
             .from("races")
             .update({
-              position_finished: eventForm.position,
               is_active: false,
             })
             .eq("id", selectedRace);
@@ -332,6 +425,14 @@ export default function Admin() {
         }
     }
   };
+
+  // Filter drivers by selected category (or all if GERAL)
+  const filteredDrivers = useMemo(() => {
+    if (eventForm.category === "GERAL" || !eventForm.category) {
+      return drivers;
+    }
+    return drivers.filter((driver) => driver.category === eventForm.category);
+  }, [drivers, eventForm.category]);
 
   if (authLoading) {
     return (
@@ -402,6 +503,52 @@ export default function Admin() {
                       className="bg-secondary"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="numCars">Número de Carros</Label>
+                    <Input
+                      id="numCars"
+                      type="number"
+                      min="0"
+                      placeholder="Ex: 50"
+                      value={newRaceForm.num_cars}
+                      onChange={(e) =>
+                        setNewRaceForm({ ...newRaceForm, num_cars: e.target.value })
+                      }
+                      className="bg-secondary"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="numClasses">Número de Classes</Label>
+                    <Input
+                      id="numClasses"
+                      type="number"
+                      min="0"
+                      placeholder="Ex: 3"
+                      value={newRaceForm.num_classes}
+                      onChange={(e) =>
+                        setNewRaceForm({ ...newRaceForm, num_classes: e.target.value })
+                      }
+                      className="bg-secondary"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="weather">Tempo</Label>
+                    <Select
+                      value={newRaceForm.weather}
+                      onValueChange={(value) =>
+                        setNewRaceForm({ ...newRaceForm, weather: value })
+                      }
+                    >
+                      <SelectTrigger className="bg-secondary">
+                        <SelectValue placeholder="Selecionar tempo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sol">Sol</SelectItem>
+                        <SelectItem value="chuva">Chuva</SelectItem>
+                        <SelectItem value="nublado">Nublado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button
@@ -466,6 +613,8 @@ export default function Admin() {
                       clip_url: "",
                       category: "",
                     });
+                    setPositionLMP2("");
+                    setPositionGT3PRO("");
                   }}
                 >
                   Cancelar Edição
@@ -494,9 +643,27 @@ export default function Admin() {
                   <Label htmlFor="lap">Categoria</Label>
                   <Select
                     value={eventForm.category || "GERAL"}
-                    onValueChange={(v) =>
-                      setEventForm({ ...eventForm, category: v as string })
-                    }
+                    onValueChange={(v) => {
+                      const newCategory = v as string;
+                      // Se mudou a categoria e o driver atual não pertence à nova categoria, limpar driver
+                      const currentDriver = drivers.find((d) => d.name === eventForm.driver);
+                      const shouldClearDriver =
+                        eventForm.driver &&
+                        currentDriver &&
+                        newCategory !== "GERAL" &&
+                        currentDriver.category !== newCategory;
+                      setEventForm({
+                        ...eventForm,
+                        category: newCategory,
+                        driver: shouldClearDriver ? "" : eventForm.driver,
+                      });
+                      // Clear position fields when category changes (if finishing race)
+                      if (eventForm.event_type === "finish") {
+                        setPositionLMP2("");
+                        setPositionGT3PRO("");
+                        setEventForm((prev) => ({ ...prev, position: "" }));
+                      }
+                    }}
                   >
                     <SelectTrigger className="bg-secondary">
                       <SelectValue placeholder="Selecionar categoria" />
@@ -514,9 +681,14 @@ export default function Admin() {
                   <Label htmlFor="eventType">Tipo de Evento</Label>
                   <Select
                     value={eventForm.event_type}
-                    onValueChange={(v) =>
-                      setEventForm({ ...eventForm, event_type: v as RaceEventType })
-                    }
+                    onValueChange={(v) => {
+                      setEventForm({ ...eventForm, event_type: v as RaceEventType });
+                      // Clear position fields when changing event type
+                      if (v !== "finish") {
+                        setPositionLMP2("");
+                        setPositionGT3PRO("");
+                      }
+                    }}
                   >
                     <SelectTrigger className="bg-secondary">
                       <SelectValue placeholder="Selecionar tipo" />
@@ -546,32 +718,81 @@ export default function Admin() {
                 />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="position">Posição (opcional)</Label>
-                  <Input
-                    id="position"
-                    placeholder="P6"
-                    value={eventForm.position}
-                    onChange={(e) =>
-                      setEventForm({ ...eventForm, position: e.target.value })
-                    }
-                    className="bg-secondary"
-                  />
+              {/* Position fields - only show when finishing race */}
+              {eventForm.event_type === "finish" ? (
+                eventForm.category === "GERAL" ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="positionLMP2">Posição Final - LMP2</Label>
+                      <Input
+                        id="positionLMP2"
+                        placeholder="1"
+                        value={positionLMP2}
+                        onChange={(e) => setPositionLMP2(e.target.value)}
+                        className="bg-secondary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="positionGT3PRO">Posição Final - GT3 PRO</Label>
+                      <Input
+                        id="positionGT3PRO"
+                        placeholder="1"
+                        value={positionGT3PRO}
+                        onChange={(e) => setPositionGT3PRO(e.target.value)}
+                        className="bg-secondary"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="position">Posição Final - {eventForm.category}</Label>
+                    <Input
+                      id="position"
+                      placeholder="6"
+                      value={eventForm.position}
+                      onChange={(e) =>
+                        setEventForm({ ...eventForm, position: e.target.value })
+                      }
+                      className="bg-secondary"
+                    />
+                  </div>
+                )
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="position">Posição (opcional)</Label>
+                    <Input
+                      id="position"
+                      placeholder="6"
+                      value={eventForm.position}
+                      onChange={(e) =>
+                        setEventForm({ ...eventForm, position: e.target.value })
+                      }
+                      className="bg-secondary"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="driver">Piloto (opcional)</Label>
+                    <Select
+                      value={eventForm.driver}
+                      onValueChange={(value) =>
+                        setEventForm({ ...eventForm, driver: value })
+                      }
+                    >
+                      <SelectTrigger className="bg-secondary">
+                        <SelectValue placeholder="Selecionar piloto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredDrivers.map((driver) => (
+                          <SelectItem key={driver.id} value={driver.name}>
+                            {driver.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="driver">Piloto (opcional)</Label>
-                  <Input
-                    id="driver"
-                    placeholder="Rodrigo Marreiros"
-                    value={eventForm.driver}
-                    onChange={(e) =>
-                      setEventForm({ ...eventForm, driver: e.target.value })
-                    }
-                    className="bg-secondary"
-                  />
-                </div>
-              </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="clipUrl">Link do Clip (opcional)</Label>

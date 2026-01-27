@@ -10,27 +10,59 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import { Button } from "../ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
 type RaceEvent = Database["public"]["Tables"]["race_events"]["Row"];
 type Category = Database["public"]["Tables"]["categories"]["Row"];
+type EventType = Database["public"]["Tables"]["event_types"]["Row"];
+type Driver = Database["public"]["Tables"]["drivers"]["Row"];
+type RaceEventType = Database["public"]["Enums"]["race_event_type"];
+
 interface RaceEventsListProps {
   raceId?: string;
 }
 
 export function RaceEventsList({ raceId }: RaceEventsListProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [events, setEvents] = useState<RaceEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [eventTypes, setEventTypes] = useState<EventType[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(categories[0]?.name || "");
   const [spin, setSpin] = useState(0);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<RaceEvent | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [editForm, setEditForm] = useState({
+    lap: "",
+    description: "",
+    event_type: "other" as RaceEventType,
+    position: "",
+    driver: "",
+    clip_url: "",
+    category: "GERAL",
+  });
 
   useEffect(() => {
-  getCategories();
-  fetchEvents();
+    getCategories();
+    getEventTypes();
+    getDrivers();
+    fetchEvents();
 
   // Set up realtime subscription
   const channel = supabase
@@ -62,20 +94,50 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
   }, [raceId]);
 
   const getCategories = async () => {
+    const { data, error } = await supabase.from("categories").select("*");
+
+    if (error) {
+      console.error("Error fetching categories:", error);
+      return [];
+    }
+
+    if (data) {
+      setCategories(data.filter((category) => category.name !== "GERAL"));
+      setSelectedCategory(data[0]?.name || "");
+    }
+  };
+
+  const getEventTypes = async () => {
     const { data, error } = await supabase
-    .from("categories")
-    .select("*");
+      .from("event_types")
+      .select("*")
+      .order("order_index", { ascending: true });
 
-  if (error) {
-    console.error("Error fetching categories:", error);
-    return [];
-  }
+    if (error) {
+      console.error("Error fetching event types:", error);
+      return;
+    }
 
-  if (data) {
-    setCategories(data.filter((category) => category.name !== "GERAL")); 
-    setSelectedCategory(data[0]?.name || "");
-  }
-};
+    if (data) {
+      setEventTypes(data);
+    }
+  };
+
+  const getDrivers = async () => {
+    const { data, error } = await supabase
+      .from("drivers")
+      .select("*")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching drivers:", error);
+      return;
+    }
+
+    if (data) {
+      setDrivers(data);
+    }
+  };
 
   const fetchEvents = async () => {
     let query = supabase
@@ -94,6 +156,61 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
     }
     setLoading(false);
   };
+
+  const handleEditEvent = (event: RaceEvent) => {
+    setEditingEvent(event);
+    setEditForm({
+      lap: event.lap.toString(),
+      description: event.description,
+      event_type: event.event_type,
+      position: event.position || "",
+      driver: event.driver || "",
+      clip_url: event.clip_url || "",
+      category: event.category || "GERAL",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEvent) return;
+
+    setSubmitting(true);
+    const { error } = await supabase
+      .from("race_events")
+      .update({
+        lap: parseInt(editForm.lap),
+        description: editForm.description,
+        event_type: editForm.event_type,
+        position: editForm.position ? editForm.position.toUpperCase() : null,
+        driver: editForm.driver || null,
+        clip_url: editForm.clip_url || null,
+        category: editForm.category || null,
+      })
+      .eq("id", editingEvent.id);
+
+    setSubmitting(false);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error.message,
+      });
+    } else {
+      toast({ title: "Ocorrência atualizada!" });
+      setEditDialogOpen(false);
+      setEditingEvent(null);
+    }
+  };
+
+  // Filter drivers by selected category (or all if GERAL)
+  const filteredDrivers = useMemo(() => {
+    if (editForm.category === "GERAL" || !editForm.category) {
+      return drivers;
+    }
+    return drivers.filter((driver) => driver.category === editForm.category);
+  }, [drivers, editForm.category]);
 
   // Filter events by selected category + GERAL category
   const filteredEvents = useMemo(() => {
@@ -175,9 +292,176 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
         </div>
       ) : (
         filteredEvents.map((event, index) => (
-          <RaceEventCard key={event.id} event={event} index={index} />
+          <RaceEventCard
+            key={event.id}
+            event={event}
+            index={index}
+            onEdit={handleEditEvent}
+          />
         ))
       )}
+
+      {/* Edit Event Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-racing">Editar Ocorrência</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateEvent} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-lap">Volta</Label>
+                <Input
+                  id="edit-lap"
+                  type="number"
+                  placeholder="25"
+                  value={editForm.lap}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, lap: e.target.value })
+                  }
+                  required
+                  min={1}
+                  className="bg-secondary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">Categoria</Label>
+                <Select
+                  value={editForm.category || "GERAL"}
+                  onValueChange={(v) => {
+                    const newCategory = v as string;
+                    // Se mudou a categoria e o driver atual não pertence à nova categoria, limpar driver
+                    const currentDriver = drivers.find((d) => d.name === editForm.driver);
+                    const shouldClearDriver =
+                      editForm.driver &&
+                      currentDriver &&
+                      newCategory !== "GERAL" &&
+                      currentDriver.category !== newCategory;
+                    setEditForm({
+                      ...editForm,
+                      category: newCategory,
+                      driver: shouldClearDriver ? "" : editForm.driver,
+                    });
+                  }}
+                >
+                  <SelectTrigger className="bg-secondary">
+                    <SelectValue placeholder="Selecionar categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="GERAL">GERAL</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-event-type">Tipo de Evento</Label>
+                <Select
+                  value={editForm.event_type}
+                  onValueChange={(v) =>
+                    setEditForm({ ...editForm, event_type: v as RaceEventType })
+                  }
+                >
+                  <SelectTrigger className="bg-secondary">
+                    <SelectValue placeholder="Selecionar tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eventTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Descrição</Label>
+              <Textarea
+                id="edit-description"
+                placeholder="Ultrapassagem na T1 para P6"
+                value={editForm.description}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, description: e.target.value })
+                }
+                required
+                className="bg-secondary min-h-[80px]"
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-position">Posição (opcional)</Label>
+                <Input
+                  id="edit-position"
+                  placeholder="6"
+                  value={editForm.position}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, position: e.target.value })
+                  }
+                  className="bg-secondary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-driver">Piloto (opcional)</Label>
+                <Select
+                  value={editForm.driver}
+                  onValueChange={(value) =>
+                    setEditForm({ ...editForm, driver: value })
+                  }
+                >
+                  <SelectTrigger className="bg-secondary">
+                    <SelectValue placeholder="Selecionar piloto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredDrivers.map((driver) => (
+                      <SelectItem key={driver.id} value={driver.name}>
+                        {driver.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-clip-url">Link do Clip (opcional)</Label>
+              <Input
+                id="edit-clip-url"
+                type="url"
+                placeholder="https://clips.twitch.tv/..."
+                value={editForm.clip_url}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, clip_url: e.target.value })
+                }
+                className="bg-secondary"
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEditDialogOpen(false);
+                  setEditingEvent(null);
+                }}
+                disabled={submitting}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Guardar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

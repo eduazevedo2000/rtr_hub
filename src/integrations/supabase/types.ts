@@ -134,6 +134,9 @@ export type Database = {
           position_finished: string | null
           category: string | null
           split: string | null
+          num_cars: number | null
+          num_classes: number | null
+          weather: string | null
         }
         Insert: {
           created_at?: string
@@ -145,6 +148,9 @@ export type Database = {
           position_finished?: string | null
           category?: string | null
           split?: string | null
+          num_cars?: number | null
+          num_classes?: number | null
+          weather?: string | null
         }
         Update: {
           created_at?: string
@@ -156,6 +162,9 @@ export type Database = {
           position_finished?: string | null
           category?: string | null
           split?: string | null
+          num_cars?: number | null
+          num_classes?: number | null
+          weather?: string | null
         }
         Relationships: []
       }
@@ -202,6 +211,38 @@ export type Database = {
             columns: ["race_id"]
             isOneToOne: false
             referencedRelation: "races"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      achievement_positions: {
+        Row: {
+          id: string
+          achievement_id: string
+          category: string
+          position_finished: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          achievement_id: string
+          category: string
+          position_finished: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          achievement_id?: string
+          category?: string
+          position_finished?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievement_positions_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "team_achievements"
             referencedColumns: ["id"]
           },
         ]

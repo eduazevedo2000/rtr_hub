@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
-import { Flag, Fuel, AlertTriangle, Users, Play, Clock, Edit, Timer } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Flag, Fuel, AlertTriangle, Users, Play, Clock, Edit, Timer, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -24,30 +25,40 @@ const eventTypeConfig: Record<string, { icon: typeof Flag; className: string; la
 interface RaceEventCardProps {
   event: RaceEvent;
   index: number;
+  onEdit?: (event: RaceEvent) => void;
 }
 
-export function RaceEventCard({ event, index }: RaceEventCardProps) {
+export function RaceEventCard({ event, index, onEdit }: RaceEventCardProps) {
   const config = eventTypeConfig[event.event_type] || eventTypeConfig.other;
   const Icon = config.icon;
-  const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const handleEdit = () => {
-    navigate("/admin", {
-      state: {
-        editEvent: {
-          id: event.id,
-          race_id: event.race_id,
-          lap: event.lap.toString(),
-          description: event.description,
-          event_type: event.event_type,
-          position: event.position || "",
-          driver: event.driver || "",
-          clip_url: event.clip_url || "",
-          category: event.category || "",
-        },
-      },
-    });
+    if (onEdit) {
+      onEdit(event);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Tens a certeza que queres eliminar esta ocorrência?")) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("race_events")
+      .delete()
+      .eq("id", event.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao eliminar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: "Ocorrência eliminada!" });
+    }
   };
 
   return (
@@ -106,15 +117,26 @@ export function RaceEventCard({ event, index }: RaceEventCardProps) {
             })}
           </div>
           {user && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 hover:bg-primary/20"
-              onClick={handleEdit}
-              title="Editar ocorrência"
-            >
-              <Edit className="h-3 w-3 text-muted-foreground hover:text-primary" />
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 hover:bg-primary/20"
+                onClick={handleEdit}
+                title="Editar ocorrência"
+              >
+                <Edit className="h-3 w-3 text-muted-foreground hover:text-primary" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 hover:bg-destructive/20"
+                onClick={handleDelete}
+                title="Eliminar ocorrência"
+              >
+                <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+              </Button>
+            </>
           )}
         </div>
       </div>

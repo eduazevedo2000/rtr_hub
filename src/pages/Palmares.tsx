@@ -13,11 +13,14 @@ import {
 import type { Database } from "@/integrations/supabase/types";
 
 type Race = Database["public"]["Tables"]["races"]["Row"];
+type AchievementPosition = Database["public"]["Tables"]["achievement_positions"]["Row"];
 
 export default function Palmares() {
   const [races, setRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null);
+  // Map of race_id -> array of positions
+  const [racePositions, setRacePositions] = useState<Record<string, AchievementPosition[]>>({});
 
   useEffect(() => {
     const fetchRaces = async () => {
@@ -28,6 +31,37 @@ export default function Palmares() {
 
       if (!error && data) {
         setRaces(data);
+        
+        // Fetch achievements and positions for each race
+        const positionsMap: Record<string, AchievementPosition[]> = {};
+        
+        for (const race of data) {
+          if (!race.id) continue;
+          
+          // Get achievement for this race
+          const { data: achievements } = await supabase
+            .from("team_achievements")
+            .select("id")
+            .eq("race_id", race.id)
+            .limit(1);
+          
+          if (achievements && achievements.length > 0) {
+            const achievementId = achievements[0].id;
+            
+            // Get positions for this achievement
+            const { data: positions } = await supabase
+              .from("achievement_positions")
+              .select("*")
+              .eq("achievement_id", achievementId)
+              .order("category", { ascending: true });
+            
+            if (positions && positions.length > 0) {
+              positionsMap[race.id] = positions;
+            }
+          }
+        }
+        
+        setRacePositions(positionsMap);
       }
       setLoading(false);
     };
@@ -157,26 +191,70 @@ export default function Palmares() {
                         }}
                         whileHover={{ x: 4 }}
                       >
-                        {race.position_finished && (
-                          <div className="absolute top-4 right-4 z-10">
-                            <span
-                              className={`position-badge ${
-                                race.position_finished === "P1" ||
-                                race.position_finished === "1"
-                                  ? "p1"
-                                  : race.position_finished === "P2" ||
-                                      race.position_finished === "2"
-                                    ? "p2"
-                                    : race.position_finished === "P3" ||
-                                        race.position_finished === "3"
-                                      ? "p3"
-                                      : "bg-secondary"
-                              }`}
-                            >
-                              {race.position_finished}
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const positions = race.id ? racePositions[race.id] : [];
+                          const hasPositions = positions && positions.length > 0;
+                          
+                          // Fallback to race.position_finished if no positions found
+                          const fallbackPosition = race.position_finished;
+                          
+                          if (hasPositions || fallbackPosition) {
+                            const hasMultiple = hasPositions && positions.length > 1;
+                            
+                            return (
+                              <div className={`absolute top-4 right-4 z-10 ${hasMultiple ? 'flex flex-row flex-wrap gap-3 justify-end' : 'flex flex-col gap-2 items-end'}`}>
+                                {hasPositions ? (
+                                  positions.map((pos) => {
+                                    const isP1 = pos.position_finished === "P1" || pos.position_finished === "1";
+                                    const isP2 = pos.position_finished === "P2" || pos.position_finished === "2";
+                                    const isP3 = pos.position_finished === "P3" || pos.position_finished === "3";
+                                    
+                                    return (
+                                      <div key={pos.id} className="flex flex-col items-center gap-1.5 min-w-[60px]">
+                                        <span
+                                          className={`position-badge position-badge-large ${
+                                            isP1
+                                              ? "p1"
+                                              : isP2
+                                                ? "p2"
+                                                : isP3
+                                                  ? "p3"
+                                                  : "bg-secondary"
+                                          }`}
+                                        >
+                                          {pos.position_finished}
+                                        </span>
+                                        <span className="text-xs sm:text-sm font-racing uppercase tracking-wider text-muted-foreground text-center whitespace-nowrap">
+                                          {pos.category}
+                                        </span>
+                                      </div>
+                                    );
+                                  })
+                                ) : (
+                                  <div className="flex flex-col items-center gap-1.5">
+                                    <span
+                                      className={`position-badge position-badge-large ${
+                                        fallbackPosition === "P1" ||
+                                        fallbackPosition === "1"
+                                          ? "p1"
+                                          : fallbackPosition === "P2" ||
+                                              fallbackPosition === "2"
+                                            ? "p2"
+                                            : fallbackPosition === "P3" ||
+                                                fallbackPosition === "3"
+                                              ? "p3"
+                                              : "bg-secondary"
+                                      }`}
+                                    >
+                                      {fallbackPosition}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                         <div className="p-6">
                           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
                             <Calendar className="h-3 w-3 shrink-0" />
