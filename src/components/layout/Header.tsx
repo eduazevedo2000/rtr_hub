@@ -22,21 +22,31 @@ export function Header() {
 
   const NavLink = ({ item, className = "" }: { item: (typeof navItems)[0]; className?: string }) => {
     const isActive = location.pathname === item.path;
+    const isLive = item.path === "/";
     const Icon = item.icon;
+
+    const colorClasses = isLive
+      ? isActive
+        ? "text-red-500"
+        : "text-red-500/80 hover:text-red-500"
+      : isActive
+        ? "text-primary"
+        : "text-muted-foreground hover:text-foreground";
+
+    const underlineClass = isActive ? (isLive ? "bg-red-500" : "bg-primary") : "";
+
     return (
       <Link key={item.path} to={item.path} className={className}>
         <motion.div
-          className={`relative flex items-center gap-2 px-4 py-2 font-racing text-sm uppercase tracking-wider transition-colors ${
-            isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-          }`}
+          className={`relative flex items-center gap-2 px-4 py-2 font-racing text-sm uppercase tracking-wider transition-colors ${colorClasses}`}
           whileHover={{ y: -2 }}
           whileTap={{ y: 0 }}
         >
           <Icon className="h-4 w-4" />
           {item.label}
-          {isActive && (
+          {isActive && underlineClass && (
             <motion.div
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+              className={`absolute bottom-0 left-0 right-0 h-0.5 ${underlineClass}`}
               layoutId="activeNav"
               initial={false}
             />
