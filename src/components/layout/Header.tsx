@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Flag, Trophy, HelpCircle, Settings, LogIn, LogOut, User, Mail, Users, Globe } from "lucide-react";
+import { Flag, Trophy, HelpCircle, Settings, LogIn, LogOut, User, Mail, Users, Globe, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { path: "/", label: "Live", icon: Flag },
+  { path: "/calendario", label: "Calendário", icon: Calendar },
   { path: "/palmares", label: "Palmarés", icon: Trophy },
   { path: "/pilotos", label: "Pilotos", icon: Users },
   { path: "/redes", label: "Redes Sociais", icon: Globe },

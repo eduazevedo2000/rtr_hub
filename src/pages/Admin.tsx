@@ -133,6 +133,7 @@ export default function Admin() {
   const [newRaceForm, setNewRaceForm] = useState({
     name: "",
     track: "",
+    tipo: "" as "vsca" | "iracing" | "",
     is_active: true,
     num_cars: "",
     num_classes: "",
@@ -197,6 +198,14 @@ export default function Admin() {
 
   const handleCreateRace = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newRaceForm.tipo) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Seleciona o tipo da corrida.",
+      });
+      return;
+    }
     setSubmitting(true);
 
     // Deactivate other races if this one is active
@@ -207,6 +216,7 @@ export default function Admin() {
     const raceData = {
       name: newRaceForm.name,
       track: newRaceForm.track,
+      tipo: newRaceForm.tipo as "vsca" | "iracing",
       is_active: newRaceForm.is_active,
       num_cars: newRaceForm.num_cars ? parseInt(newRaceForm.num_cars, 10) : null,
       num_classes: newRaceForm.num_classes ? parseInt(newRaceForm.num_classes, 10) : null,
@@ -232,7 +242,7 @@ export default function Admin() {
       setRaces([data, ...races]);
       setSelectedRace(data.id);
       setShowNewRace(false);
-      setNewRaceForm({ name: "", track: "", is_active: true, num_cars: "", num_classes: "", weather: "" });
+      setNewRaceForm({ name: "", track: "", tipo: "", is_active: true, num_cars: "", num_classes: "", weather: "" });
     }
   };
 
@@ -403,22 +413,38 @@ export default function Admin() {
           }
 
           // Update race to inactive
-          const { error } = await supabase
+          const { data: finishedRace, error: updateError } = await supabase
             .from("races")
-            .update({
-              is_active: false,
-            })
-            .eq("id", selectedRace);
+            .update({ is_active: false })
+            .eq("id", selectedRace)
+            .select("date")
+            .single();
 
-          if (error) {
+          if (updateError) {
             toast({
               variant: "destructive",
               title: "Erro",
-              description: error.message,
+              description: updateError.message,
             });
-          }
+          } else {
+            // Ativar a próxima corrida (por data)
+            if (finishedRace?.date) {
+              const { data: nextRaces } = await supabase
+                .from("races")
+                .select("id")
+                .gt("date", finishedRace.date)
+                .order("date", { ascending: true })
+                .limit(1);
 
-          toast({ title: "Corrida finalizada!" });
+              if (nextRaces && nextRaces.length > 0) {
+                await supabase
+                  .from("races")
+                  .update({ is_active: true })
+                  .eq("id", nextRaces[0].id);
+              }
+            }
+            toast({ title: "Corrida finalizada!" });
+          }
         }
         else {
           toast({ title: "Ocorrência atualizada!" });
@@ -502,6 +528,24 @@ export default function Admin() {
                       required
                       className="bg-secondary"
                     />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="tipo">Tipo</Label>
+                    <Select
+                      value={newRaceForm.tipo}
+                      onValueChange={(v) =>
+                        setNewRaceForm({ ...newRaceForm, tipo: v as "vsca" | "iracing" })
+                      }
+                      required
+                    >
+                      <SelectTrigger className="bg-secondary">
+                        <SelectValue placeholder="Selecionar tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="vsca">VSCA</SelectItem>
+                        <SelectItem value="iracing">iRacing</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="numCars">Número de Carros</Label>

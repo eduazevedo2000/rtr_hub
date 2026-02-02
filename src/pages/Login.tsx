@@ -121,14 +121,14 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          {/* <div className="mt-6 text-center">
             <button
               onClick={() => setIsLogin(!isLogin)}
               className="text-sm text-muted-foreground hover:text-foreground"
             >
               {isLogin ? "Não tens conta? Criar conta" : "Já tens conta? Entrar"}
             </button>
-          </div>
+          </div> */}
         </div>
       </motion.div>
     </div>

@@ -14,6 +14,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Race = Database["public"]["Tables"]["races"]["Row"];
 type AchievementPosition = Database["public"]["Tables"]["achievement_positions"]["Row"];
+type Category = Database["public"]["Tables"]["categories"]["Row"];
 
 export default function Palmares() {
   const [races, setRaces] = useState<Race[]>([]);
@@ -21,6 +22,8 @@ export default function Palmares() {
   const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null);
   // Map of race_id -> array of positions
   const [racePositions, setRacePositions] = useState<Record<string, AchievementPosition[]>>({});
+  // Map of category name -> color (from categories table)
+  const [categoryColors, setCategoryColors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchRaces = async () => {
@@ -67,6 +70,24 @@ export default function Palmares() {
     };
 
     fetchRaces();
+  }, []);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name, color");
+
+      if (!error && data) {
+        const colors: Record<string, string> = {};
+        for (const cat of data as Category[]) {
+          if (cat.color) colors[cat.name] = cat.color;
+        }
+        setCategoryColors(colors);
+      }
+    };
+
+    fetchCategories();
   }, []);
 
   const formatDate = (d: string | null) => {
@@ -186,6 +207,21 @@ export default function Palmares() {
 
                       <motion.div
                         className="card-racing group relative min-w-0 flex-1 cursor-pointer overflow-hidden transition-colors hover:border-primary/50"
+                        style={
+                          race.tipo === "vsca"
+                            ? {
+                                background:
+                                  "linear-gradient(180deg, hsl(215 25% 22%) 0%, hsl(215 20% 16%) 100%)",
+                                borderColor: "hsl(215 25% 28%)",
+                              }
+                            : race.tipo === "iracing"
+                              ? {
+                                  background:
+                                    "linear-gradient(180deg, hsl(0 0% 4%) 0%, hsl(0 0% 2%) 100%)",
+                                  borderColor: "hsl(220 10% 12%)",
+                                }
+                              : undefined
+                        }
                         onClick={() => {
                           if (race.id) setSelectedRaceId(race.id);
                         }}
@@ -224,7 +260,14 @@ export default function Palmares() {
                                         >
                                           {pos.position_finished}
                                         </span>
-                                        <span className="text-xs sm:text-sm font-racing uppercase tracking-wider text-muted-foreground text-center whitespace-nowrap">
+                                        <span
+                                          className={`text-xs sm:text-sm font-racing uppercase tracking-wider text-center whitespace-nowrap font-semibold ${!categoryColors[pos.category] ? "text-muted-foreground" : ""}`}
+                                          style={
+                                            categoryColors[pos.category]
+                                              ? { color: categoryColors[pos.category] }
+                                              : undefined
+                                          }
+                                        >
                                           {pos.category}
                                         </span>
                                       </div>

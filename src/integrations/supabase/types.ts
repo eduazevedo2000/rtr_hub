@@ -137,6 +137,7 @@ export type Database = {
           num_cars: number | null
           num_classes: number | null
           weather: string | null
+          tipo: Database["public"]["Enums"]["race_type"] | null
         }
         Insert: {
           created_at?: string
@@ -151,6 +152,7 @@ export type Database = {
           num_cars?: number | null
           num_classes?: number | null
           weather?: string | null
+          tipo?: Database["public"]["Enums"]["race_type"] | null
         }
         Update: {
           created_at?: string
@@ -165,6 +167,7 @@ export type Database = {
           num_cars?: number | null
           num_classes?: number | null
           weather?: string | null
+          tipo?: Database["public"]["Enums"]["race_type"] | null
         }
         Relationships: []
       }
@@ -366,14 +369,17 @@ export type Database = {
         Row: {
           id: string
           name: string
+          color: string | null
         }
         Insert: {
           id?: string
           name: string
+          color?: string | null
         }
         Update: {
           id?: string
           name?: string
+          color?: string | null
         }
         Relationships: []
       }
@@ -421,6 +427,7 @@ export type Database = {
         | "finish"
         | "qualification"
         | "other"
+      race_type: "vsca" | "iracing"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -561,6 +568,7 @@ export const Constants = {
         "qualification",
         "other",
       ],
+      race_type: ["vsca", "iracing"],
     },
   },
 } as const
