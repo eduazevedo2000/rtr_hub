@@ -151,6 +151,24 @@ export default function Pilotos() {
     const driverId = editingDriver?.id || `temp-${Math.random().toString(36).substring(2)}`;
     const filePath = `${driverId}/${fileName}`;
 
+    // If editing and has old image, try to delete it first
+    if (editingDriver?.image_url) {
+      try {
+        // Extract path from URL
+        const oldUrl = editingDriver.image_url;
+        const urlParts = oldUrl.split('/Pilotos/');
+        if (urlParts.length > 1) {
+          const oldPath = urlParts[1].split('?')[0]; // Remove query params
+          await supabase.storage
+            .from("Pilotos")
+            .remove([oldPath]);
+        }
+      } catch (err) {
+        console.log("Could not delete old image:", err);
+        // Continue anyway
+      }
+    }
+
     // Upload to Supabase Storage (bucket: Pilotos)
     const { error: uploadError } = await supabase.storage
       .from("Pilotos")
