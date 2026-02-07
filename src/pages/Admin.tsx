@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MultiSelectDrivers } from "@/components/ui/multi-select-drivers";
 import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -138,6 +139,9 @@ export default function Admin() {
     num_cars: "",
     num_classes: "",
     weather: "",
+    drivers: [] as string[],
+    duration_hours: "",
+    duration_minutes: "",
   });
 
   useEffect(() => {
@@ -213,6 +217,11 @@ export default function Admin() {
       await supabase.from("races").update({ is_active: false }).eq("is_active", true);
     }
 
+    // Convert hours and minutes to decimal hours
+    const hours = newRaceForm.duration_hours ? parseInt(newRaceForm.duration_hours, 10) : 0;
+    const minutes = newRaceForm.duration_minutes ? parseInt(newRaceForm.duration_minutes, 10) : 0;
+    const totalHours = hours + (minutes / 60);
+    
     const raceData = {
       name: newRaceForm.name,
       track: newRaceForm.track,
@@ -221,6 +230,8 @@ export default function Admin() {
       num_cars: newRaceForm.num_cars ? parseInt(newRaceForm.num_cars, 10) : null,
       num_classes: newRaceForm.num_classes ? parseInt(newRaceForm.num_classes, 10) : null,
       weather: newRaceForm.weather || null,
+      drivers: newRaceForm.drivers.length > 0 ? newRaceForm.drivers : null,
+      duration_hours: totalHours > 0 ? totalHours : null,
     };
 
     const { data, error } = await supabase
@@ -242,7 +253,7 @@ export default function Admin() {
       setRaces([data, ...races]);
       setSelectedRace(data.id);
       setShowNewRace(false);
-      setNewRaceForm({ name: "", track: "", tipo: "", is_active: true, num_cars: "", num_classes: "", weather: "" });
+      setNewRaceForm({ name: "", track: "", tipo: "", is_active: true, num_cars: "", num_classes: "", weather: "", drivers: [], duration_hours: "", duration_minutes: "" });
     }
   };
 
@@ -592,6 +603,45 @@ export default function Admin() {
                         <SelectItem value="nublado">Nublado</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="duration-hours">Duração - Horas</Label>
+                    <Input
+                      id="duration-hours"
+                      type="number"
+                      min="0"
+                      max="99"
+                      placeholder="ex: 2, 6, 24"
+                      value={newRaceForm.duration_hours}
+                      onChange={(e) =>
+                        setNewRaceForm({ ...newRaceForm, duration_hours: e.target.value })
+                      }
+                      className="bg-secondary"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="duration-minutes">Duração - Minutos</Label>
+                    <Input
+                      id="duration-minutes"
+                      type="number"
+                      min="0"
+                      max="59"
+                      placeholder="ex: 0, 30, 45"
+                      value={newRaceForm.duration_minutes}
+                      onChange={(e) =>
+                        setNewRaceForm({ ...newRaceForm, duration_minutes: e.target.value })
+                      }
+                      className="bg-secondary"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <MultiSelectDrivers
+                      selectedIds={newRaceForm.drivers}
+                      onChange={(ids) =>
+                        setNewRaceForm({ ...newRaceForm, drivers: ids })
+                      }
+                      label="Pilotos a Participar"
+                    />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">

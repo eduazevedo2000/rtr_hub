@@ -43,45 +43,55 @@ export default function Palmares() {
   const [raceToDelete, setRaceToDelete] = useState<Race | null>(null);
 
   const fetchRaces = async () => {
-    const { data, error } = await supabase
+    // Fetch races
+    const { data: racesData, error: racesError } = await supabase
       .from("races")
       .select("*")
       .order("date", { ascending: false });
 
-    if (!error && data) {
-      setRaces(data);
-      
-      // Fetch achievements and positions for each race
+    if (racesError || !racesData) {
+      setLoading(false);
+      return;
+    }
+
+    setRaces(racesData);
+    
+    // Fetch all achievements and positions in parallel using a single query with join
+    const { data: achievementsData, error: achievementsError } = await supabase
+      .from("team_achievements")
+      .select(`
+        id,
+        race_id,
+        achievement_positions (
+          id,
+          category,
+          position_finished
+        )
+      `)
+      .in('race_id', racesData.map(r => r.id).filter(Boolean));
+
+    if (!achievementsError && achievementsData) {
+      // Build positions map
       const positionsMap: Record<string, AchievementPosition[]> = {};
       
-      for (const race of data) {
-        if (!race.id) continue;
-        
-        // Get achievement for this race
-        const { data: achievements } = await supabase
-          .from("team_achievements")
-          .select("id")
-          .eq("race_id", race.id)
-          .limit(1);
-        
-        if (achievements && achievements.length > 0) {
-          const achievementId = achievements[0].id;
+      for (const achievement of achievementsData) {
+        if (achievement.race_id && achievement.achievement_positions) {
+          // achievement_positions is an array due to the relationship
+          const positions = Array.isArray(achievement.achievement_positions) 
+            ? achievement.achievement_positions 
+            : [achievement.achievement_positions];
           
-          // Get positions for this achievement
-          const { data: positions } = await supabase
-            .from("achievement_positions")
-            .select("*")
-            .eq("achievement_id", achievementId)
-            .order("category", { ascending: true });
-          
-          if (positions && positions.length > 0) {
-            positionsMap[race.id] = positions;
+          if (positions.length > 0) {
+            positionsMap[achievement.race_id] = positions.sort((a, b) => 
+              a.category.localeCompare(b.category)
+            ) as AchievementPosition[];
           }
         }
       }
       
       setRacePositions(positionsMap);
     }
+    
     setLoading(false);
   };
 

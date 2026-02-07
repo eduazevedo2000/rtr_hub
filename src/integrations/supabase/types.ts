@@ -135,6 +135,8 @@ export type Database = {
           num_classes: number | null
           weather: string | null
           tipo: Database["public"]["Enums"]["race_type"] | null
+          drivers: string[] | null
+          duration_hours: number | null
         }
         Insert: {
           created_at?: string
@@ -150,6 +152,8 @@ export type Database = {
           num_classes?: number | null
           weather?: string | null
           tipo?: Database["public"]["Enums"]["race_type"] | null
+          drivers?: string[] | null
+          duration_hours?: number | null
         }
         Update: {
           created_at?: string
@@ -165,6 +169,8 @@ export type Database = {
           num_classes?: number | null
           weather?: string | null
           tipo?: Database["public"]["Enums"]["race_type"] | null
+          drivers?: string[] | null
+          duration_hours?: number | null
         }
         Relationships: []
       }

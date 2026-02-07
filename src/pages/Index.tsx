@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { RaceEventsList } from "@/components/race/RaceEventsList";
 import { QualifyingTable } from "@/components/race/QualifyingTable";
 import { TrackInfo } from "@/components/race/TrackInfo";
+import { RaceDrivers } from "@/components/race/RaceDrivers";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,8 @@ const Index = () => {
     num_cars: "",
     num_classes: "",
     weather: "",
+    duration_hours: "",
+    duration_minutes: "",
   });
 
   useEffect(() => {
@@ -79,12 +82,18 @@ const Index = () => {
 
   const openEditDialog = () => {
     if (!activeRace) return;
+    const totalHours = activeRace.duration_hours || 0;
+    const hours = Math.floor(totalHours);
+    const minutes = Math.round((totalHours - hours) * 60);
+    
     setEditForm({
       name: activeRace.name,
       track: activeRace.track,
       num_cars: activeRace.num_cars?.toString() || "",
       num_classes: activeRace.num_classes?.toString() || "",
       weather: activeRace.weather || "",
+      duration_hours: hours > 0 ? hours.toString() : "",
+      duration_minutes: minutes > 0 ? minutes.toString() : "",
     });
     setEditDialogOpen(true);
   };
@@ -94,12 +103,19 @@ const Index = () => {
     if (!activeRace) return;
 
     setSubmitting(true);
+    
+    // Convert hours and minutes to decimal hours
+    const hours = editForm.duration_hours ? parseInt(editForm.duration_hours, 10) : 0;
+    const minutes = editForm.duration_minutes ? parseInt(editForm.duration_minutes, 10) : 0;
+    const totalHours = hours + (minutes / 60);
+    
     const updateData = {
       name: editForm.name,
       track: editForm.track,
       num_cars: editForm.num_cars ? parseInt(editForm.num_cars, 10) : null,
       num_classes: editForm.num_classes ? parseInt(editForm.num_classes, 10) : null,
       weather: editForm.weather || null,
+      duration_hours: totalHours > 0 ? totalHours : null,
     };
 
     const { data, error } = await supabase
@@ -190,7 +206,7 @@ const Index = () => {
       {/* Stats Bar */}
       <section className="border-b border-border bg-card/50">
         <div className="container py-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -217,6 +233,23 @@ const Index = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 * 2 }}
+              className="text-center"
+            >
+              <Clock className="h-5 w-5 mx-auto mb-2 text-primary" />
+              <p className="font-racing text-2xl font-bold">
+                {activeRace?.duration_hours ? (() => {
+                  const hours = Math.floor(activeRace.duration_hours);
+                  const minutes = Math.round((activeRace.duration_hours - hours) * 60);
+                  if (minutes === 0) return `${hours}h`;
+                  return `${hours}h ${minutes}m`;
+                })() : "—"}
+              </p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Duração</p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * 3 }}
               className="text-center"
             >
               {activeRace?.weather ? (
@@ -262,6 +295,7 @@ const Index = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             <QualifyingTable raceId={activeRace?.id} />
+            <RaceDrivers driverIds={activeRace?.drivers} />
             <TrackInfo raceId={activeRace?.id} />
           </div>
         </div>
@@ -351,6 +385,36 @@ const Index = () => {
                     <SelectItem value="nublado">Nublado</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-duration-hours">Duração - Horas</Label>
+                <Input
+                  id="edit-duration-hours"
+                  type="number"
+                  min="0"
+                  max="99"
+                  placeholder="ex: 2, 6, 24"
+                  value={editForm.duration_hours}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, duration_hours: e.target.value })
+                  }
+                  className="bg-secondary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-duration-minutes">Duração - Minutos</Label>
+                <Input
+                  id="edit-duration-minutes"
+                  type="number"
+                  min="0"
+                  max="59"
+                  placeholder="ex: 0, 30, 45"
+                  value={editForm.duration_minutes}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, duration_minutes: e.target.value })
+                  }
+                  className="bg-secondary"
+                />
               </div>
             </div>
             <DialogFooter>

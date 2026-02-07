@@ -43,7 +43,7 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>(categories[0]?.name || "");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [spin, setSpin] = useState(0);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<RaceEvent | null>(null);
@@ -102,8 +102,12 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
     }
 
     if (data) {
-      setCategories(data.filter((category) => category.name !== "GERAL"));
-      setSelectedCategory(data[0]?.name || "");
+      const filteredCategories = data.filter((category) => category.name !== "GERAL");
+      setCategories(filteredCategories);
+      // Set the first category as selected if not already set
+      if (!selectedCategory && filteredCategories.length > 0) {
+        setSelectedCategory(filteredCategories[0].name);
+      }
     }
   };
 
