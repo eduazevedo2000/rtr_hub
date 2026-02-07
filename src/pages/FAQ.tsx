@@ -276,7 +276,7 @@ export default function FAQ() {
                         </div>
                       )}
                     </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">
+                    <AccordionContent className="text-muted-foreground whitespace-pre-wrap">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
