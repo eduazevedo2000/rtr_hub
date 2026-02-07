@@ -143,14 +143,20 @@ export default function Pilotos() {
 
     setUploadingImage(true);
 
-    // Upload to Supabase Storage
+    // Generate file path
     const fileExt = file.name.split(".").pop();
-    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-    const filePath = `drivers/${fileName}`;
+    const fileName = `profile.${fileExt}`;
+    
+    // If editing, use driver ID; if adding, use temp random ID
+    const driverId = editingDriver?.id || `temp-${Math.random().toString(36).substring(2)}`;
+    const filePath = `${driverId}/${fileName}`;
 
+    // Upload to Supabase Storage (bucket: Pilotos)
     const { error: uploadError } = await supabase.storage
-      .from("images")
-      .upload(filePath, file);
+      .from("Pilotos")
+      .upload(filePath, file, {
+        upsert: true, // Replace if exists
+      });
 
     if (uploadError) {
       toast({
@@ -164,7 +170,7 @@ export default function Pilotos() {
 
     // Get public URL
     const { data: publicUrlData } = supabase.storage
-      .from("images")
+      .from("Pilotos")
       .getPublicUrl(filePath);
 
     setForm({ ...form, image_url: publicUrlData.publicUrl });
