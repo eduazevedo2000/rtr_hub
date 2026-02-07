@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/Header";
 const YOUTUBE_RED = "#FF0000";
 const TWITCH_PURPLE = "#9146FF";
 const INSTAGRAM_PINK = "#E4405F";
+const KICK_GREEN = "#00FF00";
 
 const YOUTUBE_RTR = "https://www.youtube.com/@RicTeamRacing";
 const YOUTUBE_RICFAZERES = "https://www.youtube.com/@RicFazeres";
@@ -12,6 +13,8 @@ const TWITCH_RICFAZERES = "https://www.twitch.tv/ricfazeres";
 const TWITCH_RTR = "https://www.twitch.tv/ricteamracing";
 const INSTAGRAM_RTR = "https://www.instagram.com/ricteamracing/";
 const INSTAGRAM_RICFAZERES = "https://www.instagram.com/ricfazeres/";
+// const KICK_RTR = "https://www.kick.com/ricteamracing";
+const KICK_RICFAZERES = "https://www.kick.com/ricfazeres";
 
 function YouTubeLogo({ className }: { className?: string }) {
   return (
@@ -62,6 +65,16 @@ function InstagramLogo({ className }: { className?: string }) {
   );
 }
 
+function KickLogo({ className }: { className?: string }) {
+  return (
+    <img
+      src="/images/kick.png"
+      alt="Kick"
+      className={`object-contain ${className ?? ""}`}
+      aria-hidden
+    />
+  );
+}
 const sections = [
   {
     title: "Ric Team Racing",
@@ -113,6 +126,14 @@ const sections = [
         // description: "Transmissões ao vivo na Twitch",
         Logo: TwitchLogo,
         color: TWITCH_PURPLE,
+      },
+      {
+        platform: "Kick",
+        href: KICK_RICFAZERES,
+        label: "RicFazeres",
+        // description: "Transmissões ao vivo na Kick",
+        Logo: KickLogo,
+        color: KICK_GREEN,
       },
       {
         platform: "Instagram",

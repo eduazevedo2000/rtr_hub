@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Cloud, Map, Loader2 } from "lucide-react";
+import { Cloud, Map, Loader2, Upload, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
 
 type TrackInfoRow = Database["public"]["Tables"]["track_info"]["Row"];
@@ -16,66 +19,189 @@ interface TrackInfoProps {
 }
 
 export function TrackInfo({ raceId }: TrackInfoProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [info, setInfo] = useState<TrackInfoType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState<"weather" | "map" | null>(null);
+  const weatherInputRef = useRef<HTMLInputElement>(null);
+  const mapInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchInfo = async () => {
+    if (!raceId) {
+      setLoading(false);
+      return;
+    }
+
+    const { data: trackInfoData, error: trackInfoError } = await supabase
+      .from("track_info")
+      .select("*")
+      .eq("race_id", raceId)
+      .maybeSingle();
+
+    if (trackInfoError || !trackInfoData) {
+      setLoading(false);
+      return;
+    }
+
+    // Buscar as imagens separadamente
+    const imageIds: string[] = [];
+    if (trackInfoData.weather_image_id) {
+      imageIds.push(trackInfoData.weather_image_id);
+    }
+    if (trackInfoData.track_map_id) {
+      imageIds.push(trackInfoData.track_map_id);
+    }
+
+    let weatherImage: ImageRow | undefined;
+    let trackMap: ImageRow | undefined;
+
+    if (imageIds.length > 0) {
+      const { data: imagesData } = await supabase
+        .from("images")
+        .select("*")
+        .in("id", imageIds);
+
+      if (imagesData) {
+        weatherImage = imagesData.find(
+          (img) => img.id === trackInfoData.weather_image_id
+        );
+        trackMap = imagesData.find(
+          (img) => img.id === trackInfoData.track_map_id
+        );
+      }
+    }
+
+    setInfo({
+      ...trackInfoData,
+      weather_image: weatherImage,
+      track_map: trackMap,
+    } as TrackInfoType);
+
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchInfo = async () => {
-      if (!raceId) {
-        setLoading(false);
-        return;
-      }
+    fetchInfo();
+  }, [raceId]);
 
-      const { data: trackInfoData, error: trackInfoError } = await supabase
+  const handleUpload = async (
+    file: File,
+    type: "weather" | "map"
+  ) => {
+    if (!raceId) {
+      toast({
+        title: "Erro",
+        description: "Corrida não encontrada.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(type);
+
+    try {
+      const bucket = type === "weather" ? "track-weather" : "track-images";
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${raceId}/${fileName}`;
+
+      // Upload para o Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Obter URL pública
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+      // Criar entrada na tabela images
+      const { data: imageData, error: imageError } = await supabase
+        .from("images")
+        .insert({
+          storage_path: filePath,
+          url: publicUrl,
+          filename: file.name,
+          mime_type: file.type,
+          size_bytes: file.size,
+          description: type === "weather" ? "Weather forecast" : "Track map",
+          category: type === "weather" ? "weather" : "track-map",
+        })
+        .select()
+        .single();
+
+      if (imageError) throw imageError;
+
+      // Criar ou atualizar track_info
+      const updateField =
+        type === "weather" ? "weather_image_id" : "track_map_id";
+
+      const { data: existingInfo } = await supabase
         .from("track_info")
-        .select("*")
+        .select("id")
         .eq("race_id", raceId)
         .maybeSingle();
 
-      if (trackInfoError || !trackInfoData) {
-        setLoading(false);
+      if (existingInfo) {
+        // Atualizar
+        const { error: updateError } = await supabase
+          .from("track_info")
+          .update({ [updateField]: imageData.id })
+          .eq("id", existingInfo.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Criar novo
+        const { error: insertError } = await supabase
+          .from("track_info")
+          .insert({
+            race_id: raceId,
+            [updateField]: imageData.id,
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      toast({
+        title: "Imagem carregada!",
+        description: "A imagem foi carregada com sucesso.",
+      });
+
+      fetchInfo();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar imagem",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "weather" | "map"
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Ficheiro inválido",
+          description: "Por favor seleciona uma imagem.",
+          variant: "destructive",
+        });
         return;
       }
-
-      // Buscar as imagens separadamente
-      const imageIds: string[] = [];
-      if ((trackInfoData as any).weather_image_id) {
-        imageIds.push((trackInfoData as any).weather_image_id);
-      }
-      if ((trackInfoData as any).track_map_id) {
-        imageIds.push((trackInfoData as any).track_map_id);
-      }
-
-      let weatherImage: ImageRow | undefined;
-      let trackMap: ImageRow | undefined;
-
-      if (imageIds.length > 0) {
-        const { data: imagesData } = await supabase
-          .from("images")
-          .select("*")
-          .in("id", imageIds);
-
-        if (imagesData) {
-          weatherImage = imagesData.find(
-            (img) => img.id === (trackInfoData as any).weather_image_id
-          );
-          trackMap = imagesData.find(
-            (img) => img.id === (trackInfoData as any).track_map_id
-          );
-        }
-      }
-
-      setInfo({
-        ...trackInfoData,
-        weather_image: weatherImage,
-        track_map: trackMap,
-      } as TrackInfoType);
-
-      setLoading(false);
-    };
-
-    fetchInfo();
-  }, [raceId]);
+      handleUpload(file, type);
+    }
+  };
 
   if (loading) {
     return (
@@ -89,9 +215,39 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
     <div className="grid gap-4">
       {/* Weather Card */}
       <div className="card-racing p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Cloud className="h-4 w-4 text-primary" />
-          <h3 className="font-racing text-sm uppercase tracking-wider">Previsão do Tempo</h3>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Cloud className="h-4 w-4 text-primary" />
+            <h3 className="font-racing text-sm uppercase tracking-wider">Previsão do Tempo</h3>
+          </div>
+          {user && raceId && (
+            <Button
+              onClick={() => weatherInputRef.current?.click()}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={uploading === "weather"}
+            >
+              {uploading === "weather" ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  A carregar...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-3.5 w-3.5" />
+                  {info?.weather_image?.url ? "Substituir" : "Carregar"}
+                </>
+              )}
+            </Button>
+          )}
+          <input
+            ref={weatherInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileChange(e, "weather")}
+          />
         </div>
         {info?.weather_image?.url ? (
           <div className="space-y-2">
@@ -111,9 +267,39 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
 
       {/* Track Map Card */}
       <div className="card-racing p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Map className="h-4 w-4 text-primary" />
-          <h3 className="font-racing text-sm uppercase tracking-wider">Mapa da Pista</h3>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Map className="h-4 w-4 text-primary" />
+            <h3 className="font-racing text-sm uppercase tracking-wider">Mapa da Pista</h3>
+          </div>
+          {user && raceId && (
+            <Button
+              onClick={() => mapInputRef.current?.click()}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={uploading === "map"}
+            >
+              {uploading === "map" ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  A carregar...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-3.5 w-3.5" />
+                  {info?.track_map?.url ? "Substituir" : "Carregar"}
+                </>
+              )}
+            </Button>
+          )}
+          <input
+            ref={mapInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileChange(e, "map")}
+          />
         </div>
         {info?.track_map?.url ? (
           <img

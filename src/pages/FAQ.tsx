@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { HelpCircle, Loader2, Plus, Pencil } from "lucide-react";
+import { HelpCircle, Loader2, Plus, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import {
@@ -16,6 +16,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +54,8 @@ export default function FAQ() {
   const [editingFaq, setEditingFaq] = useState<FAQItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ question: "", answer: "", order_index: 0 });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [faqToDelete, setFaqToDelete] = useState<FAQItem | null>(null);
 
   const loadFaqs = () => {
     fetchFAQs().then((data) => {
@@ -137,6 +149,34 @@ export default function FAQ() {
     setSubmitting(false);
   };
 
+  const openDelete = (faq: FAQItem) => {
+    setFaqToDelete(faq);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!faqToDelete) return;
+
+    const { error } = await supabase
+      .from("faq")
+      .delete()
+      .eq("id", faqToDelete.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao apagar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: "Pergunta apagada!" });
+      loadFaqs();
+    }
+
+    setDeleteDialogOpen(false);
+    setFaqToDelete(null);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -204,20 +244,36 @@ export default function FAQ() {
                         {faq.question}
                       </span>
                       {user && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0 rounded-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            openEdit(faq);
-                          }}
-                          aria-label={`Editar: ${faq.question}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              openEdit(faq);
+                            }}
+                            aria-label={`Editar: ${faq.question}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              openDelete(faq);
+                            }}
+                            aria-label={`Apagar: ${faq.question}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground">
@@ -296,6 +352,33 @@ export default function FAQ() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-racing">
+              Apagar pergunta?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tens a certeza que queres apagar esta pergunta? Esta ação não pode ser revertida.
+              {faqToDelete && (
+                <span className="block mt-2 font-medium text-foreground">
+                  "{faqToDelete.question}"
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Apagar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

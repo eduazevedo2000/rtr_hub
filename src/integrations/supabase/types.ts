@@ -41,30 +41,27 @@ export type Database = {
       qualifying_results: {
         Row: {
           created_at: string
-          driver: string
+          driver_id: string
           id: string
           lap_time: string | null
-          position: string
+          position: number
           race_id: string
-          category: string | null
         }
         Insert: {
           created_at?: string
-          driver: string
+          driver_id: string
           id?: string
           lap_time?: string | null
           position: number
           race_id: string
-          category?: string | null
         }
         Update: {
           created_at?: string
-          driver?: string
+          driver_id?: string
           id?: string
           lap_time?: string | null
           position?: number
           race_id?: string
-          category?: string | null
         }
         Relationships: [
           {

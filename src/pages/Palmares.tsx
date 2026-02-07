@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Trophy, Calendar, Loader2 } from "lucide-react";
+import { Trophy, Calendar, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { RaceEventsList } from "@/components/race/RaceEventsList";
@@ -10,6 +10,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
 
 type Race = Database["public"]["Tables"]["races"]["Row"];
@@ -17,6 +30,8 @@ type AchievementPosition = Database["public"]["Tables"]["achievement_positions"]
 type Category = Database["public"]["Tables"]["categories"]["Row"];
 
 export default function Palmares() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [races, setRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null);
@@ -24,51 +39,53 @@ export default function Palmares() {
   const [racePositions, setRacePositions] = useState<Record<string, AchievementPosition[]>>({});
   // Map of category name -> color (from categories table)
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [raceToDelete, setRaceToDelete] = useState<Race | null>(null);
 
-  useEffect(() => {
-    const fetchRaces = async () => {
-      const { data, error } = await supabase
-        .from("races")
-        .select("*")
-        .order("date", { ascending: false });
+  const fetchRaces = async () => {
+    const { data, error } = await supabase
+      .from("races")
+      .select("*")
+      .order("date", { ascending: false });
 
-      if (!error && data) {
-        setRaces(data);
+    if (!error && data) {
+      setRaces(data);
+      
+      // Fetch achievements and positions for each race
+      const positionsMap: Record<string, AchievementPosition[]> = {};
+      
+      for (const race of data) {
+        if (!race.id) continue;
         
-        // Fetch achievements and positions for each race
-        const positionsMap: Record<string, AchievementPosition[]> = {};
+        // Get achievement for this race
+        const { data: achievements } = await supabase
+          .from("team_achievements")
+          .select("id")
+          .eq("race_id", race.id)
+          .limit(1);
         
-        for (const race of data) {
-          if (!race.id) continue;
+        if (achievements && achievements.length > 0) {
+          const achievementId = achievements[0].id;
           
-          // Get achievement for this race
-          const { data: achievements } = await supabase
-            .from("team_achievements")
-            .select("id")
-            .eq("race_id", race.id)
-            .limit(1);
+          // Get positions for this achievement
+          const { data: positions } = await supabase
+            .from("achievement_positions")
+            .select("*")
+            .eq("achievement_id", achievementId)
+            .order("category", { ascending: true });
           
-          if (achievements && achievements.length > 0) {
-            const achievementId = achievements[0].id;
-            
-            // Get positions for this achievement
-            const { data: positions } = await supabase
-              .from("achievement_positions")
-              .select("*")
-              .eq("achievement_id", achievementId)
-              .order("category", { ascending: true });
-            
-            if (positions && positions.length > 0) {
-              positionsMap[race.id] = positions;
-            }
+          if (positions && positions.length > 0) {
+            positionsMap[race.id] = positions;
           }
         }
-        
-        setRacePositions(positionsMap);
       }
-      setLoading(false);
-    };
+      
+      setRacePositions(positionsMap);
+    }
+    setLoading(false);
+  };
 
+  useEffect(() => {
     fetchRaces();
   }, []);
 
@@ -101,6 +118,35 @@ export default function Palmares() {
     } catch {
       return d;
     }
+  };
+
+  const openDelete = (race: Race, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRaceToDelete(race);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!raceToDelete?.id) return;
+
+    const { error } = await supabase
+      .from("races")
+      .delete()
+      .eq("id", raceToDelete.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao apagar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: "Corrida apagada!" });
+      fetchRaces();
+    }
+
+    setDeleteDialogOpen(false);
+    setRaceToDelete(null);
   };
 
   type TimelineItem =
@@ -227,6 +273,18 @@ export default function Palmares() {
                         }}
                         whileHover={{ x: 4 }}
                       >
+                        {user && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 right-2 z-20 h-8 w-8 rounded-full opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                            onClick={(e) => openDelete(race, e)}
+                            aria-label={`Apagar: ${race.name}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                         {(() => {
                           const positions = race.id ? racePositions[race.id] : [];
                           const hasPositions = positions && positions.length > 0;
@@ -356,6 +414,33 @@ export default function Palmares() {
           </>
         )}
       </main>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-racing">
+              Apagar corrida?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tens a certeza que queres apagar esta corrida do palmarés? Esta ação não pode ser revertida.
+              {raceToDelete && (
+                <span className="block mt-2 font-medium text-foreground">
+                  "{raceToDelete.name}"
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Apagar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
