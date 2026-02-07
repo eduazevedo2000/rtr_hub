@@ -186,12 +186,15 @@ export default function Pilotos() {
       return;
     }
 
-    // Get public URL
+    // Get public URL with cache-busting timestamp
     const { data: publicUrlData } = supabase.storage
       .from("Pilotos")
       .getPublicUrl(filePath);
 
-    setForm({ ...form, image_url: publicUrlData.publicUrl });
+    // Add timestamp to force browser to reload the image
+    const urlWithTimestamp = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+    
+    setForm({ ...form, image_url: urlWithTimestamp });
     setUploadingImage(false);
     toast({ title: "Imagem carregada!" });
   };
