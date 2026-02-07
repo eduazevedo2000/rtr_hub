@@ -93,21 +93,65 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
     };
   }, [raceId]);
 
+  // Auto-select first category when categories change
+  useEffect(() => {
+    if (categories.length > 0) {
+      setSelectedCategory(categories[0].name);
+    }
+  }, [categories]);
+
   const getCategories = async () => {
+    // If we have a raceId, get categories only from drivers in this race
+    if (raceId) {
+      // First, get the race to find which drivers are participating
+      const { data: raceData } = await supabase
+        .from("races")
+        .select("drivers")
+        .eq("id", raceId)
+        .single();
+
+      if (raceData && raceData.drivers && raceData.drivers.length > 0) {
+        // Get the drivers for this race
+        const { data: driversData } = await supabase
+          .from("drivers")
+          .select("category")
+          .in("id", raceData.drivers);
+
+        if (driversData) {
+          // Get unique categories from these drivers
+          const uniqueCategories = [...new Set(driversData.map(d => d.category).filter(Boolean))];
+          
+          // Fetch full category data for these categories
+          const { data: categoriesData, error } = await supabase
+            .from("categories")
+            .select("*")
+            .in("name", uniqueCategories)
+            .neq("name", "GERAL");
+
+          if (error) {
+            console.error("Error fetching categories:", error);
+            return;
+          }
+
+          if (categoriesData && categoriesData.length > 0) {
+            setCategories(categoriesData);
+          }
+          return;
+        }
+      }
+    }
+
+    // Fallback: get all categories if no raceId or no drivers found
     const { data, error } = await supabase.from("categories").select("*");
 
     if (error) {
       console.error("Error fetching categories:", error);
-      return [];
+      return;
     }
 
     if (data) {
       const filteredCategories = data.filter((category) => category.name !== "GERAL");
       setCategories(filteredCategories);
-      // Set the first category as selected if not already set
-      if (!selectedCategory && filteredCategories.length > 0) {
-        setSelectedCategory(filteredCategories[0].name);
-      }
     }
   };
 
