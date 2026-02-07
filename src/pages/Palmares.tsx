@@ -43,20 +43,7 @@ export default function Palmares() {
   const [raceToDelete, setRaceToDelete] = useState<Race | null>(null);
 
   const fetchRaces = async () => {
-    // Fetch races
-    const { data: racesData, error: racesError } = await supabase
-      .from("races")
-      .select("*")
-      .order("date", { ascending: false });
-
-    if (racesError || !racesData) {
-      setLoading(false);
-      return;
-    }
-
-    setRaces(racesData);
-    
-    // Fetch all achievements and positions in parallel using a single query with join
+    // Fetch all achievements first to know which races have been completed
     const { data: achievementsData, error: achievementsError } = await supabase
       .from("team_achievements")
       .select(`
@@ -67,11 +54,47 @@ export default function Palmares() {
           category,
           position_finished
         )
-      `)
-      .in('race_id', racesData.map(r => r.id).filter(Boolean));
+      `);
 
-    if (!achievementsError && achievementsData) {
-      // Build positions map
+    if (achievementsError) {
+      setLoading(false);
+      return;
+    }
+
+    // Get race IDs that have achievements (manually finished races)
+    const raceIdsWithAchievements = achievementsData
+      ?.map(a => a.race_id)
+      .filter(Boolean) || [];
+
+    // Fetch races that either:
+    // 1. Have achievements (manually finished)
+    // 2. Have a date in the past (automatically considered finished)
+    const now = new Date().toISOString();
+    
+    let query = supabase
+      .from("races")
+      .select("*")
+      .order("date", { ascending: false });
+
+    // If there are achievements, include those races OR races in the past
+    if (raceIdsWithAchievements.length > 0) {
+      query = query.or(`id.in.(${raceIdsWithAchievements.join(',')}),date.lt.${now}`);
+    } else {
+      // If no achievements yet, only show past races
+      query = query.lt("date", now);
+    }
+
+    const { data: racesData, error: racesError } = await query;
+
+    if (racesError || !racesData) {
+      setLoading(false);
+      return;
+    }
+
+    setRaces(racesData);
+    
+    // Build positions map from achievements data
+    if (achievementsData) {
       const positionsMap: Record<string, AchievementPosition[]> = {};
       
       for (const achievement of achievementsData) {

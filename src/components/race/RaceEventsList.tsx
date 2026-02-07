@@ -188,19 +188,25 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
   };
 
   const fetchEvents = async () => {
-    let query = supabase
+    // If no raceId, don't fetch any events
+    if (!raceId) {
+      setEvents([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
       .from("race_events")
       .select("*")
+      .eq("race_id", raceId)
       .order("lap", { ascending: false })
       .order("created_at", { ascending: false });
 
-    if (raceId) {
-      query = query.eq("race_id", raceId);
-    }
-
-    const { data, error } = await query;
+    debugger
     if (!error && data) {
       setEvents(data);
+    } else {
+      setEvents([]);
     }
     setLoading(false);
   };

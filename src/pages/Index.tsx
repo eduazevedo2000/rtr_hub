@@ -7,6 +7,7 @@ import { RaceEventsList } from "@/components/race/RaceEventsList";
 import { QualifyingTable } from "@/components/race/QualifyingTable";
 import { TrackInfo } from "@/components/race/TrackInfo";
 import { RaceDrivers } from "@/components/race/RaceDrivers";
+import { Countdown } from "@/components/race/Countdown";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const Index = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeRace, setActiveRace] = useState<Race | null>(null);
+  const [nextRace, setNextRace] = useState<Race | null>(null);
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -62,17 +64,18 @@ const Index = () => {
         return;
       }
 
-      // // Se não houver corrida ativa, busca a última corrida (mais recente)
-      // const { data: lastRaceData, error: lastRaceError } = await supabase
-      //   .from("races")
-      //   .select("*")
-      //   .order("date", { ascending: false })
-      //   .limit(1)  
-      //   .maybeSingle();
+      // Se não houver corrida ativa, busca a próxima corrida futura
+      const { data: nextRaceData, error: nextRaceError } = await supabase
+        .from("races")
+        .select("*")
+        .gt("date", new Date().toISOString())
+        .order("date", { ascending: true })
+        .limit(1)
+        .maybeSingle();
 
-      // if (!lastRaceError && lastRaceData) {
-      //   setActiveRace(lastRaceData);
-      // }
+      if (!nextRaceError && nextRaceData) {
+        setNextRace(nextRaceData);
+      }
 
       setLoading(false);
     };
@@ -169,6 +172,11 @@ const Index = () => {
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
               Acompanha em tempo real todas as ocorrências das corridas da equipa RTR no iRacing.
             </p>
+
+            {/* Countdown for next race (when no active race) */}
+            {!activeRace && nextRace && nextRace.date && (
+              <Countdown targetDate={nextRace.date} raceName={nextRace.name} />
+            )}
 
             {activeRace && (
               <motion.div

@@ -62,18 +62,21 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
   });
 
   const fetchResults = async () => {
-    let query = supabase
-      .from("qualifying_results")
-      .select("*")
-      .order("position", { ascending: true });
-
-    if (raceId) {
-      query = query.eq("race_id", raceId);
+    // If no raceId, don't fetch any results
+    if (!raceId) {
+      setResults([]);
+      setLoading(false);
+      return;
     }
 
-    const { data: resultsData, error: resultsError } = await query;
+    const { data: resultsData, error: resultsError } = await supabase
+      .from("qualifying_results")
+      .select("*")
+      .eq("race_id", raceId)
+      .order("position", { ascending: true });
     
     if (resultsError || !resultsData) {
+      setResults([]);
       setLoading(false);
       return;
     }
