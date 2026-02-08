@@ -6,12 +6,12 @@ const partners = [
     videoSrc: "/images/parcerias/Logo pc componentes Glow cor.webm",
     link: "https://ricfazeres.net/PcComponentes",
     objectFit: "cover" as const
+  },
+  {
+    videoSrc: "/images/parcerias/Skinlab.webm",
+    link: "https://www.instagram.com/mvskinlab/",
+    objectFit: "contain" as const
   }
-  // {
-  //   videoSrc: "/images/parcerias/MV Skinlab.webm",
-  //   link: "https://www.instagram.com/mvskinlab/",
-  //   objectFit: "contain" as const
-  // }
 ];
 
 export const FloatingVideo = () => {
