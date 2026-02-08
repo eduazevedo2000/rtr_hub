@@ -35,7 +35,7 @@ export function Header() {
         ? "text-primary"
         : "text-muted-foreground hover:text-foreground";
 
-    const underlineClass = isActive ? (isLive ? "bg-red-500" : "bg-primary") : "";
+    const underlineClass = isLive ? "bg-red-500" : "bg-primary";
 
     return (
       <Link key={item.path} to={item.path} className={className}>
@@ -46,11 +46,9 @@ export function Header() {
         >
           <Icon className="h-4 w-4" />
           {item.label}
-          {isActive && underlineClass && (
-            <motion.div
+          {isActive && (
+            <span
               className={`absolute bottom-0 left-0 right-0 h-0.5 ${underlineClass}`}
-              layoutId="activeNav"
-              initial={false}
             />
           )}
         </motion.div>
