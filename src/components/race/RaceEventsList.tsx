@@ -59,34 +59,34 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
   });
 
   useEffect(() => {
-    getCategories();
-    getEventTypes();
-    getDrivers();
-    fetchEvents();
+    const loadData = async () => {
+      await Promise.all([getCategories(), getEventTypes(), getDrivers(), fetchEvents()]);
+    };
+    loadData();
 
-  // Set up realtime subscription
-  const channel = supabase
-    .channel("race_events_changes")
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "race_events",
-      },
-      (payload) => {
-        if (payload.eventType === "INSERT") {
-          setEvents((prev) => [payload.new as RaceEvent, ...prev]);
-        } else if (payload.eventType === "DELETE") {
-          setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
-        } else if (payload.eventType === "UPDATE") {
-          setEvents((prev) =>
-            prev.map((e) => (e.id === payload.new.id ? (payload.new as RaceEvent) : e))
-          );
+    // Set up realtime subscription
+    const channel = supabase
+      .channel("race_events_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "race_events",
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setEvents((prev) => [payload.new as RaceEvent, ...prev]);
+          } else if (payload.eventType === "DELETE") {
+            setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
+          } else if (payload.eventType === "UPDATE") {
+            setEvents((prev) =>
+              prev.map((e) => (e.id === payload.new.id ? (payload.new as RaceEvent) : e))
+            );
+          }
         }
-      }
-    )
-    .subscribe();
+      )
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -202,7 +202,6 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
       .order("lap", { ascending: false })
       .order("created_at", { ascending: false });
 
-    debugger
     if (!error && data) {
       setEvents(data);
     } else {

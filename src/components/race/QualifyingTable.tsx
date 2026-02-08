@@ -250,32 +250,6 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
     setResultToDelete(null);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (results.length === 0) {
-    return (
-      <>
-        <div className="card-racing p-6 text-center">
-          <Timer className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground mb-4">Sem resultados de qualificação</p>
-          {user && raceId && (
-            <Button onClick={openAdd} size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Adicionar resultado
-            </Button>
-          )}
-        </div>
-        {renderDialogs()}
-      </>
-    );
-  }
-
   function renderDialogs() {
     return (
       <>
@@ -378,75 +352,98 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
     );
   }
 
+  const dialogs = renderDialogs();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <>
-      <div className="card-racing overflow-hidden border-l-4 border-l-primary/40 bg-primary/[0.04]">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-racing text-sm uppercase tracking-wider">Qualificação</h3>
+      {results.length === 0 ? (
+        <div className="card-racing p-6 text-center">
+          <Timer className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground mb-4">Sem resultados de qualificação</p>
           {user && raceId && (
-            <Button onClick={openAdd} variant="outline" size="sm" className="gap-2">
+            <Button onClick={openAdd} size="sm" className="gap-2">
               <Plus className="h-4 w-4" />
-              Adicionar
+              Adicionar resultado
             </Button>
           )}
         </div>
-        <div className="divide-y divide-border">
-          {results.map((result) => (
-            <div
-              key={result.id}
-              className="flex items-center gap-4 p-4 hover:bg-secondary/50 transition-colors group"
-            >
-              <span
-                className={`position-badge ${
-                  result.position === 1
-                    ? "p1"
-                    : result.position === 2
-                    ? "p2"
-                    : result.position === 3
-                    ? "p3"
-                    : "bg-secondary"
-                }`}
+      ) : (
+        <div className="card-racing overflow-hidden border-l-4 border-l-primary/40 bg-primary/[0.04]">
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <h3 className="font-racing text-sm uppercase tracking-wider">Qualificação</h3>
+            {user && raceId && (
+              <Button onClick={openAdd} variant="outline" size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Adicionar
+              </Button>
+            )}
+          </div>
+          <div className="divide-y divide-border">
+            {results.map((result) => (
+              <div
+                key={result.id}
+                className="flex items-center gap-4 p-4 hover:bg-secondary/50 transition-colors group"
               >
-                P{result.position}
-              </span>
-              <div className="flex-1">
-                <p className="font-racing text-sm text-muted-foreground">{result.driver?.name || "—"}</p>
-              </div>
-              <p className="font-racing text-sm text-muted-foreground">
-                {result.driver?.category || "—"}
-              </p>
-              <p className="font-racing text-sm text-muted-foreground">
-                {result.lap_time || "—"}
-              </p>
-              {user && (
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 rounded-full"
-                    onClick={() => openEdit(result)}
-                    aria-label={`Editar: ${result.driver?.name}`}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => openDelete(result)}
-                    aria-label={`Apagar: ${result.driver?.name}`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                <span
+                  className={`position-badge ${
+                    result.position === 1
+                      ? "p1"
+                      : result.position === 2
+                      ? "p2"
+                      : result.position === 3
+                      ? "p3"
+                      : "bg-secondary"
+                  }`}
+                >
+                  P{result.position}
+                </span>
+                <div className="flex-1">
+                  <p className="font-racing text-sm text-muted-foreground">{result.driver?.name || "—"}</p>
                 </div>
-              )}
-            </div>
-          ))}
+                <p className="font-racing text-sm text-muted-foreground">
+                  {result.driver?.category || "—"}
+                </p>
+                <p className="font-racing text-sm text-muted-foreground">
+                  {result.lap_time || "—"}
+                </p>
+                {user && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-full"
+                      onClick={() => openEdit(result)}
+                      aria-label={`Editar: ${result.driver?.name}`}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => openDelete(result)}
+                      aria-label={`Apagar: ${result.driver?.name}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-      {renderDialogs()}
+      )}
+      {dialogs}
     </>
   );
 }

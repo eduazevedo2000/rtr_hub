@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import getCountryFlag from "country-flag-icons/unicode";
+import * as Flags from "country-flag-icons/react/3x2";
 
 interface Standing {
   id: string;
@@ -87,6 +87,26 @@ const shouldInvertLogo = (logoUrl: string | null): boolean => {
   if (!logoUrl) return false;
   const lowerUrl = logoUrl.toLowerCase();
   return INVERTED_BRANDS.some(brand => lowerUrl.includes(brand));
+};
+
+const FLAG_COMPONENTS = Flags as Record<string, ComponentType<{ className?: string }>>;
+const COUNTRY_CODE_ALIASES: Record<string, string> = {
+  UK: "GB",
+  EN: "GB",
+  USA: "US",
+};
+
+const renderFlag = (countryCode?: string | null) => {
+  const normalized = countryCode?.trim().toUpperCase();
+  if (!normalized) {
+    return <span className="text-xs text-muted-foreground">--</span>;
+  }
+  const resolved = COUNTRY_CODE_ALIASES[normalized] ?? normalized;
+  const Flag = FLAG_COMPONENTS[resolved];
+  if (!Flag) {
+    return <span className="text-xs">{resolved}</span>;
+  }
+  return <Flag className="h-4 w-6 rounded-sm" />;
 };
 
 export default function Classificacao() {
@@ -527,8 +547,8 @@ export default function Classificacao() {
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-xl">
-                              {getCountryFlag(standing.country_code)}
+                            <span className="inline-flex items-center">
+                              {renderFlag(standing.country_code)}
                             </span>
                             <span>{standing.team_name}</span>
                           </div>
@@ -649,11 +669,14 @@ export default function Classificacao() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {COUNTRIES.map((country) => (
-                      <SelectItem key={country.code} value={country.code}>
-                        {getCountryFlag(country.code)} {country.name}
-                      </SelectItem>
-                    ))}
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country.code} value={country.code}>
+                          <span className="inline-flex items-center gap-2">
+                            {renderFlag(country.code)}
+                            <span>{country.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>

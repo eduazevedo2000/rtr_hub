@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Calendar, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -186,16 +186,19 @@ export default function Palmares() {
     | { type: "year"; year: number }
     | { type: "race"; race: Race };
 
-  const timelineItems: TimelineItem[] = [];
-  let lastYear: number | null = null;
-  for (const race of races) {
-    const y = race.date ? new Date(race.date).getFullYear() : null;
-    if (y != null && y !== lastYear) {
-      timelineItems.push({ type: "year", year: y });
-      lastYear = y;
+  const timelineItems = useMemo<TimelineItem[]>(() => {
+    const items: TimelineItem[] = [];
+    let lastYear: number | null = null;
+    for (const race of races) {
+      const y = race.date ? new Date(race.date).getFullYear() : null;
+      if (y != null && y !== lastYear) {
+        items.push({ type: "year", year: y });
+        lastYear = y;
+      }
+      items.push({ type: "race", race });
     }
-    timelineItems.push({ type: "race", race });
-  }
+    return items;
+  }, [races]);
 
   return (
     <div className="min-h-screen bg-background">

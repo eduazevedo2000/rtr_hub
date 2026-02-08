@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Flag, Clock, Users, Trophy, Car, Layers, Cloud, Sun, CloudRain, Edit, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +29,10 @@ import {
 } from "@/components/ui/select";
 import type { Database } from "@/integrations/supabase/types";
 
-type Race = Database["public"]["Tables"]["races"]["Row"];
+type Race = Database["public"]["Tables"]["races"]["Row"] & {
+  duration_hours?: number | null;
+  drivers?: string[] | null;
+};
 
 const Index = () => {
   const { user } = useAuth();
@@ -48,6 +51,12 @@ const Index = () => {
     duration_hours: "",
     duration_minutes: "",
   });
+  const formattedDuration = useMemo(() => {
+    if (!activeRace?.duration_hours) return "—";
+    const hours = Math.floor(activeRace.duration_hours);
+    const minutes = Math.round((activeRace.duration_hours - hours) * 60);
+    return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
+  }, [activeRace?.duration_hours]);
 
   useEffect(() => {
     const fetchActiveRace = async () => {
@@ -245,12 +254,7 @@ const Index = () => {
             >
               <Clock className="h-5 w-5 mx-auto mb-2 text-primary" />
               <p className="font-racing text-2xl font-bold">
-                {activeRace?.duration_hours ? (() => {
-                  const hours = Math.floor(activeRace.duration_hours);
-                  const minutes = Math.round((activeRace.duration_hours - hours) * 60);
-                  if (minutes === 0) return `${hours}h`;
-                  return `${hours}h ${minutes}m`;
-                })() : "—"}
+                {formattedDuration}
               </p>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Duração</p>
             </motion.div>

@@ -18,12 +18,15 @@ export const FloatingVideo = () => {
   const [currentPartnerIndex, setCurrentPartnerIndex] = useState(0);
 
   useEffect(() => {
+    if (partners.length <= 1) {
+      return;
+    }
     const interval = setInterval(() => {
       setCurrentPartnerIndex((prev) => (prev + 1) % partners.length);
     }, 15000); // Change partner every 15 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [partners.length]);
 
   const currentPartner = partners[currentPartnerIndex];
 
