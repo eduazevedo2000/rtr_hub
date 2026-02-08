@@ -410,6 +410,63 @@ export type Database = {
         }
         Relationships: []
       }
+      championship_standings: {
+        Row: {
+          id: string
+          class: string
+          rank: number
+          car_number: string
+          car_logo_url: string | null
+          country_code: string
+          team_name: string
+          points: number
+          behind: number
+          starts: number
+          poles: number
+          wins: number
+          top5: number
+          top10: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          class: string
+          rank: number
+          car_number: string
+          car_logo_url?: string | null
+          country_code: string
+          team_name: string
+          points?: number
+          behind?: number
+          starts?: number
+          poles?: number
+          wins?: number
+          top5?: number
+          top10?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          class?: string
+          rank?: number
+          car_number?: string
+          car_logo_url?: string | null
+          country_code?: string
+          team_name?: string
+          points?: number
+          behind?: number
+          starts?: number
+          poles?: number
+          wins?: number
+          top5?: number
+          top10?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
