@@ -566,7 +566,12 @@ export default function Classificacao() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ delay: index * 0.05 }}
-                        className="border-b border-border hover:bg-accent/50 group"
+                        className={`border-b border-border hover:bg-accent/50 group ${
+                          user ? "cursor-pointer" : ""
+                        }`}
+                        onClick={() => {
+                          if (user) openEdit(standing);
+                        }}
                       >
                         <td className="py-3 px-4">
                           <span className="font-bold">{standing.rank}</span>
@@ -626,7 +631,10 @@ export default function Classificacao() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => openEdit(standing)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEdit(standing);
+                                }}
                                 className="h-8 w-8"
                               >
                                 <Edit className="h-4 w-4" />
@@ -634,7 +642,10 @@ export default function Classificacao() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => openDelete(standing)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDelete(standing);
+                                }}
                                 className="h-8 w-8 text-destructive hover:text-destructive"
                               >
                                 <Trash2 className="h-4 w-4" />
