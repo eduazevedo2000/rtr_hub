@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
@@ -109,7 +109,41 @@ const renderFlag = (countryCode?: string | null) => {
   return <Flag className="h-4 w-6 rounded-sm" />;
 };
 
+const recomputeRanks = async (className: "LMP2" | "GT3 PRO") => {
+  const { data, error } = await supabase
+    .from("championship_standings")
+    .select("id, points")
+    .eq("class", className);
+
+  if (error || !data) {
+    return { error };
+  }
+
+  const sorted = [...data].sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    return a.id.localeCompare(b.id);
+  });
+
+  const leaderPoints = sorted[0]?.points ?? 0;
+
+  const updateResults = await Promise.all(
+    sorted.map((item, index) =>
+      supabase
+        .from("championship_standings")
+        .update({
+          rank: index + 1,
+          behind: item.points - leaderPoints,
+        })
+        .eq("id", item.id)
+    )
+  );
+
+  const updateError = updateResults.find((result) => result.error)?.error;
+  return { error: updateError };
+};
+
 export default function Classificacao() {
+  const pointsInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedClass, setSelectedClass] = useState<"LMP2" | "GT3 PRO">("GT3 PRO");
   const [standings, setStandings] = useState<Standing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -141,6 +175,14 @@ export default function Classificacao() {
   useEffect(() => {
     fetchStandings();
   }, [selectedClass]);
+
+  useEffect(() => {
+    if (dialogOpen) {
+      requestAnimationFrame(() => {
+        pointsInputRef.current?.focus();
+      });
+    }
+  }, [dialogOpen]);
 
   const fetchStandings = async () => {
     setLoading(true);
@@ -291,7 +333,7 @@ export default function Classificacao() {
     setSubmitting(true);
 
     // Validation
-    if (!form.team_name.trim() || !form.car_number.trim() || !form.rank.trim()) {
+    if (!form.team_name.trim() || !form.car_number.trim()) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios.",
@@ -303,7 +345,7 @@ export default function Classificacao() {
 
     const standingData = {
       class: form.class,
-      rank: parseInt(form.rank),
+      rank: 0,
       car_number: form.car_number,
       country_code: form.country_code,
       team_name: form.team_name,
@@ -331,6 +373,7 @@ export default function Classificacao() {
           variant: "destructive",
         });
       } else {
+        await recomputeRanks(form.class as "LMP2" | "GT3 PRO");
         toast({ title: "Classificação atualizada!" });
         closeDialog();
         fetchStandings();
@@ -348,6 +391,7 @@ export default function Classificacao() {
           variant: "destructive",
         });
       } else {
+        await recomputeRanks(form.class as "LMP2" | "GT3 PRO");
         toast({ title: "Classificação adicionada!" });
         closeDialog();
         fetchStandings();
@@ -364,6 +408,7 @@ export default function Classificacao() {
 
   const handleDelete = async () => {
     if (!standingToDelete) return;
+    const classToRecompute = standingToDelete.class as "LMP2" | "GT3 PRO";
 
     // Delete logo from storage if exists
     if (standingToDelete.car_logo_url) {
@@ -391,6 +436,7 @@ export default function Classificacao() {
         variant: "destructive",
       });
     } else {
+      await recomputeRanks(classToRecompute);
       toast({ title: "Classificação removida!" });
       setDeleteDialogOpen(false);
       setStandingToDelete(null);
@@ -633,14 +679,13 @@ export default function Classificacao() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="rank">Posição</Label>
+                <Label htmlFor="rank">Posição (auto)</Label>
                 <Input
                   id="rank"
                   type="number"
                   value={form.rank}
-                  onChange={(e) => setForm({ ...form, rank: e.target.value })}
-                  required
-                  min="1"
+                  placeholder="Calculada pelos pontos"
+                  disabled
                 />
               </div>
             </div>
@@ -720,6 +765,7 @@ export default function Classificacao() {
                 <Label htmlFor="points">Pontos</Label>
                 <Input
                   id="points"
+                  ref={pointsInputRef}
                   type="number"
                   value={form.points}
                   onChange={(e) => setForm({ ...form, points: e.target.value })}
