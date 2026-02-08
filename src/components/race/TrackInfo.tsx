@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Cloud, Map, Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,10 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
   const [info, setInfo] = useState<TrackInfoType | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<"weather" | "map" | null>(null);
+  const [expandedImage, setExpandedImage] = useState<{
+    url: string;
+    title: string;
+  } | null>(null);
   const weatherInputRef = useRef<HTMLInputElement>(null);
   const mapInputRef = useRef<HTMLInputElement>(null);
 
@@ -251,11 +256,22 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
         </div>
         {info?.weather_image?.url ? (
           <div className="space-y-2">
-            <img
-              src={info.weather_image.url}
-              alt={info.weather_image.description || "Weather forecast"}
-              className="w-full rounded-lg"
-            />
+            <button
+              type="button"
+              onClick={() =>
+                setExpandedImage({
+                  url: info.weather_image!.url,
+                  title: "Previsão do Tempo",
+                })
+              }
+              className="w-full"
+            >
+              <img
+                src={info.weather_image.url}
+                alt={info.weather_image.description || "Weather forecast"}
+                className="w-full rounded-lg cursor-zoom-in transition-transform hover:scale-[1.01]"
+              />
+            </button>
             {info.weather_description && (
               <p className="text-sm text-muted-foreground">{info.weather_description}</p>
             )}
@@ -302,15 +318,66 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
           />
         </div>
         {info?.track_map?.url ? (
-          <img
-            src={info.track_map.url}
-            alt={info.track_map.description || "Track map"}
-            className="w-full rounded-lg"
-          />
+          <button
+            type="button"
+            onClick={() =>
+              setExpandedImage({
+                url: info.track_map!.url,
+                title: "Mapa da Pista",
+              })
+            }
+            className="w-full"
+          >
+            <img
+              src={info.track_map.url}
+              alt={info.track_map.description || "Track map"}
+              className="w-full rounded-lg cursor-zoom-in transition-transform hover:scale-[1.01]"
+            />
+          </button>
         ) : (
           <p className="text-sm text-muted-foreground">Sem mapa disponível</p>
         )}
       </div>
+
+      <AnimatePresence>
+        {expandedImage && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setExpandedImage(null)}
+          >
+            <motion.div
+              className="relative w-full max-w-5xl"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setExpandedImage(null)}
+                className="absolute -top-3 -right-3 rounded-full bg-black/80 text-white p-2 shadow-lg hover:bg-black"
+                aria-label="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="rounded-lg bg-black/30 p-2">
+                <img
+                  src={expandedImage.url}
+                  alt={expandedImage.title}
+                  className="w-full max-h-[85vh] object-contain rounded-lg"
+                />
+              </div>
+              <p className="mt-3 text-center text-sm text-white/80">
+                {expandedImage.title}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
