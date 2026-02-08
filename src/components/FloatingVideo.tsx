@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 const partners = [
   {
     videoSrc: "/images/parcerias/Logo pc componentes Glow cor.webm",
-    link: "https://ricfazeres.net/PcComponentes?r=lp&m=Mp49eX6blXH",
+    link: "https://ricfazeres.net/PcComponentes",
     objectFit: "cover" as const
   }
   // {
