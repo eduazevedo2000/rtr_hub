@@ -11,9 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -21,9 +20,7 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = isLogin
-      ? await signIn(email, password)
-      : await signUp(email, password);
+    const { error } = await signIn(email, password);
 
     setLoading(false);
 
@@ -35,16 +32,10 @@ export default function Login() {
       });
     } else {
       toast({
-        title: isLogin ? "Bem-vindo!" : "Conta criada!",
-        description: isLogin
-          ? "Login efetuado com sucesso."
-          : "Podes agora fazer login.",
+        title: "Bem-vindo!",
+        description: "Login efetuado com sucesso.",
       });
-      if (isLogin) {
-        navigate("/admin");
-      } else {
-        setIsLogin(true);
-      }
+      navigate("/admin");
     }
   };
 
@@ -71,12 +62,10 @@ export default function Login() {
               <span className="font-racing text-xl font-bold text-primary-foreground">R</span>
             </div>
             <h1 className="font-racing text-2xl font-bold">
-              {isLogin ? "Entrar" : "Criar Conta"}
+              Entrar
             </h1>
             <p className="text-sm text-muted-foreground mt-2">
-              {isLogin
-                ? "Acede ao painel de administração RTR"
-                : "Cria uma conta para gerir a equipa"}
+              Acede ao painel de administração RTR
             </p>
           </div>
 
@@ -113,22 +102,11 @@ export default function Login() {
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isLogin ? (
-                "Entrar"
               ) : (
-                "Criar Conta"
+                "Entrar"
               )}
             </Button>
           </form>
-
-          {/* <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-foreground"
-            >
-              {isLogin ? "Não tens conta? Criar conta" : "Já tens conta? Entrar"}
-            </button>
-          </div> */}
         </div>
       </motion.div>
     </div>

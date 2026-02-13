@@ -16,6 +16,7 @@ import {
 import { MultiSelectDrivers } from "@/components/ui/multi-select-drivers";
 import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -28,6 +29,7 @@ type Driver = Database["public"]["Tables"]["drivers"]["Row"];
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -145,10 +147,19 @@ export default function Admin() {
   });
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
+    if (!authLoading && !adminLoading) {
+      if (!user) {
+        navigate("/login");
+      } else if (!isAdmin) {
+        toast({
+          variant: "destructive",
+          title: "Acesso Negado",
+          description: "Não tens permissão para aceder a esta página.",
+        });
+        navigate("/");
+      }
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, adminLoading, isAdmin, navigate, toast]);
 
   useEffect(() => {
     const fetchRaces = async () => {
@@ -197,8 +208,8 @@ export default function Admin() {
       getDrivers();
     };
 
-    if (user) fetchRaces();
-  }, [user, location.state]);
+    if (user && isAdmin && !adminLoading) fetchRaces();
+  }, [user, isAdmin, adminLoading, location.state]);
 
   const handleCreateRace = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -471,7 +482,7 @@ export default function Admin() {
     return drivers.filter((driver) => driver.category === eventForm.category);
   }, [drivers, eventForm.category]);
 
-  if (authLoading) {
+  if (authLoading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -480,6 +491,11 @@ export default function Admin() {
   }
 
   if (!user) return null;
+
+  // If user is authenticated but not admin, show nothing (redirect will happen in useEffect)
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
