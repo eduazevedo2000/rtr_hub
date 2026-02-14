@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ComponentType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import * as Flags from "country-flag-icons/react/3x2";
+import { parsePdfToStandings, type ParsedStanding } from "@/utils/pdfParser";
 
 interface Standing {
   id: string;
@@ -155,6 +156,14 @@ export default function Classificacao() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // PDF Import states
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [parsedData, setParsedData] = useState<ParsedStanding[]>([]);
+  const [importClass, setImportClass] = useState<"LMP2" | "GT3 PRO">("GT3 PRO");
+  const [parsingPdf, setParsingPdf] = useState(false);
+  const [importingData, setImportingData] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState<StandingForm>({
     class: "GT3 PRO",
@@ -444,6 +453,169 @@ export default function Classificacao() {
     }
   };
 
+  // PDF Import handlers
+  const handlePdfFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      toast({
+        title: "Erro",
+        description: "Apenas ficheiros PDF são permitidos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setParsingPdf(true);
+
+    debugger
+
+    try {
+      const result = await parsePdfToStandings(file);
+      
+      if (result.standings.length === 0) {
+        throw new Error("Nenhuma classificação encontrada no PDF");
+      }
+
+      setParsedData(result.standings);
+      
+      // Set detected class or default to current selected
+      if (result.detectedClass) {
+        setImportClass(result.detectedClass);
+      } else {
+        setImportClass(selectedClass);
+      }
+
+      toast({
+        title: "PDF processado com sucesso!",
+        description: `${result.standings.length} equipas encontradas.`,
+      });
+    } catch (error) {
+      console.error("PDF parsing error:", error);
+      toast({
+        title: "Erro ao processar PDF",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+      setParsedData([]);
+    } finally {
+      setParsingPdf(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (parsedData.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Nenhum dado para importar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setImportingData(true);
+
+    try {
+      // Step 1: Get existing standings to preserve country_code and car_logo_url
+      const { data: existingStandings, error: fetchError } = await supabase
+        .from("championship_standings")
+        .select("car_number, country_code, car_logo_url")
+        .eq("class", importClass);
+
+      if (fetchError) {
+        throw new Error(`Erro ao buscar dados existentes: ${fetchError.message}`);
+      }
+
+      // Create a map for quick lookup
+      const existingDataMap = new Map(
+        (existingStandings || []).map(s => [
+          s.car_number,
+          { country_code: s.country_code, car_logo_url: s.car_logo_url }
+        ])
+      );
+
+      // Step 2: Delete all existing standings for this class
+      const { error: deleteError } = await supabase
+        .from("championship_standings")
+        .delete()
+        .eq("class", importClass);
+
+      if (deleteError) {
+        throw new Error(`Erro ao limpar dados existentes: ${deleteError.message}`);
+      }
+
+      // Step 3: Insert new standings, preserving country_code and car_logo_url when available
+      const standingsToInsert = parsedData.map((standing) => {
+        const existingData = existingDataMap.get(standing.car_number);
+        
+        return {
+          class: importClass,
+          rank: 0, // Will be recalculated
+          car_number: standing.car_number,
+          country_code: existingData?.country_code || "PT", // Preserve or default to PT
+          team_name: standing.team_name,
+          car_logo_url: existingData?.car_logo_url || null, // Preserve or null
+          points: standing.points,
+          behind: standing.behind,
+          starts: standing.starts,
+          poles: standing.poles,
+          wins: standing.wins,
+          top5: standing.top5,
+          top10: standing.top10,
+        };
+      });
+
+      const { error: insertError } = await supabase
+        .from("championship_standings")
+        .insert(standingsToInsert);
+
+      if (insertError) {
+        throw new Error(`Erro ao inserir dados: ${insertError.message}`);
+      }
+
+      // Step 4: Recompute ranks
+      await recomputeRanks(importClass);
+
+      // Success!
+      const preserved = standingsToInsert.filter(s => s.car_logo_url || s.country_code !== "PT").length;
+      toast({
+        title: "Importação concluída!",
+        description: `${parsedData.length} equipas importadas. ${preserved > 0 ? `${preserved} equipas mantiveram bandeiras/logos.` : ""}`,
+      });
+
+      // Reset and close
+      setImportDialogOpen(false);
+      setParsedData([]);
+      
+      // Refresh if viewing the imported class
+      if (selectedClass === importClass) {
+        fetchStandings();
+      }
+    } catch (error) {
+      console.error("Import error:", error);
+      toast({
+        title: "Erro na importação",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setImportingData(false);
+    }
+  };
+
+  const handleCancelImport = () => {
+    setImportDialogOpen(false);
+    setParsedData([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -491,7 +663,11 @@ export default function Classificacao() {
 
         {/* Add Team Button (Admin Only) */}
         {user && (
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end gap-2 mb-4">
+            <Button onClick={() => setImportDialogOpen(true)} variant="outline" className="gap-2">
+              <Upload className="h-4 w-4" />
+              Importar PDF
+            </Button>
             <Button onClick={openAdd} className="gap-2">
               <Plus className="h-4 w-4" />
               Adicionar Equipa
@@ -883,6 +1059,156 @@ export default function Classificacao() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* PDF Import Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-racing">Importar Classificação via PDF</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* File Input */}
+            <div className="space-y-2">
+              <Label htmlFor="pdf-file">Selecionar PDF</Label>
+              <Input
+                id="pdf-file"
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={handlePdfFileSelect}
+                disabled={parsingPdf || importingData}
+                className="cursor-pointer"
+              />
+              <p className="text-sm text-muted-foreground">
+                Selecione o PDF da classificação oficial fornecido pela organização.
+              </p>
+            </div>
+
+            {/* Loading state */}
+            {parsingPdf && (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">A processar PDF...</p>
+              </div>
+            )}
+
+            {/* Preview table */}
+            {!parsingPdf && parsedData.length > 0 && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="import-class">Classe</Label>
+                  <Select
+                    value={importClass}
+                    onValueChange={(value) => setImportClass(value as "LMP2" | "GT3 PRO")}
+                    disabled={importingData}
+                  >
+                    <SelectTrigger id="import-class">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LMP2">LMP2</SelectItem>
+                      <SelectItem value="GT3 PRO">GT3 PRO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="border rounded-lg">
+                  <div className="bg-muted px-4 py-3 rounded-t-lg">
+                    <h3 className="font-semibold">
+                      Preview: {parsedData.length} equipas encontradas
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="border-b">
+                        <tr className="text-sm text-muted-foreground">
+                          <th className="text-left py-2 px-4">Rank</th>
+                          <th className="text-left py-2 px-4">No.</th>
+                          <th className="text-left py-2 px-4">Equipa</th>
+                          <th className="text-center py-2 px-4">Pontos</th>
+                          <th className="text-center py-2 px-4">Behind</th>
+                          <th className="text-center py-2 px-4">Starts</th>
+                          <th className="text-center py-2 px-4">Poles</th>
+                          <th className="text-center py-2 px-4">Wins</th>
+                          <th className="text-center py-2 px-4">Top 5</th>
+                          <th className="text-center py-2 px-4">Top 10</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parsedData.map((standing, index) => (
+                          <tr
+                            key={index}
+                            className="border-b hover:bg-muted/50 text-sm"
+                          >
+                            <td className="py-2 px-4">{standing.rank}</td>
+                            <td className="py-2 px-4">
+                              <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-primary rounded">
+                                {standing.car_number}
+                              </span>
+                            </td>
+                            <td className="py-2 px-4">{standing.team_name}</td>
+                            <td className="text-center py-2 px-4 font-bold">
+                              {standing.points}
+                            </td>
+                            <td className="text-center py-2 px-4">
+                              {standing.behind}
+                            </td>
+                            <td className="text-center py-2 px-4">
+                              {standing.starts}
+                            </td>
+                            <td className="text-center py-2 px-4">
+                              {standing.poles}
+                            </td>
+                            <td className="text-center py-2 px-4">
+                              {standing.wins}
+                            </td>
+                            <td className="text-center py-2 px-4">
+                              {standing.top5}
+                            </td>
+                            <td className="text-center py-2 px-4">
+                              {standing.top10}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Warning */}
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <p className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-1">
+                    ℹ️ Informação:
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Esta ação irá atualizar os pontos e estatísticas de todas as equipas da classe{" "}
+                    <strong>{importClass}</strong>. As bandeiras e logos dos carros já existentes 
+                    serão preservados automaticamente (matching por número do carro).
+                  </p>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancelImport}
+                    disabled={importingData}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleConfirmImport}
+                    disabled={importingData}
+                  >
+                    {importingData ? "A importar..." : "Confirmar e Importar"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
