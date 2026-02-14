@@ -16,6 +16,8 @@ import Contacts from "./pages/Contacts";
 import RedesSociais from "./pages/RedesSociais";
 import Calendario from "./pages/Calendario";
 import Classificacao from "./pages/Classificacao";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/palmares" element={<Palmares />} />
             <Route path="/pilotos" element={<Pilotos />} />
