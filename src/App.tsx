@@ -18,6 +18,7 @@ import Calendario from "./pages/Calendario";
 import Classificacao from "./pages/Classificacao";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import AboutUs from "./pages/AboutUs";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/redes" element={<RedesSociais />} />
             <Route path="/calendario" element={<Calendario />} />
+            <Route path="/about" element={<AboutUs />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
