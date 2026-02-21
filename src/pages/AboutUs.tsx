@@ -17,7 +17,7 @@ export default function AboutUs() {
             className="text-center"
           >
             <Users className="h-12 w-12 mx-auto mb-4 text-primary" />
-            <h1 className="font-racing text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
               SOBRE NÓS
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
@@ -35,9 +35,9 @@ export default function AboutUs() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="card-racing p-8"
+            className="card-racing p-4 sm:p-8"
           >
-            <h2 className="font-racing text-2xl font-bold mb-4 flex items-center gap-2">
+            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
               <Flag className="h-6 w-6 text-primary" />
               A Nossa História
             </h2>
@@ -53,9 +53,9 @@ export default function AboutUs() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="card-racing p-8"
+            className="card-racing p-4 sm:p-8"
           >
-            <h2 className="font-racing text-2xl font-bold mb-4 flex items-center gap-2">
+            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-primary" />
               Ricfazeres - Team Owner
             </h2>
@@ -74,9 +74,9 @@ export default function AboutUs() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="card-racing p-8"
+            className="card-racing p-4 sm:p-8"
           >
-            <h2 className="font-racing text-2xl font-bold mb-4 flex items-center gap-2">
+            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
               <Heart className="h-6 w-6 text-primary" />
               A Nossa Filosofia
             </h2>
@@ -95,9 +95,9 @@ export default function AboutUs() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="card-racing p-8"
+            className="card-racing p-4 sm:p-8"
           >
-            <h2 className="font-racing text-2xl font-bold mb-4 flex items-center gap-2">
+            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
               <Trophy className="h-6 w-6 text-primary" />
               As Nossas Competições
             </h2>
@@ -116,9 +116,9 @@ export default function AboutUs() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="card-racing p-8"
+            className="card-racing p-4 sm:p-8"
           >
-            <h2 className="font-racing text-2xl font-bold mb-4 flex items-center gap-2">
+            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
               <Target className="h-6 w-6 text-primary" />
               A Nossa Visão
             </h2>

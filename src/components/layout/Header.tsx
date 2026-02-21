@@ -214,7 +214,7 @@ export function Header() {
         <Link
           to={item.path}
           onClick={() => setMobileMenuOpen(false)}
-          className={`flex items-center gap-3 px-4 py-3 font-racing text-sm uppercase tracking-wider transition-colors ${colorClasses} hover:bg-secondary`}
+          className={`flex items-center gap-3 px-4 py-3.5 min-h-[44px] font-racing text-sm uppercase tracking-wider transition-colors ${colorClasses} hover:bg-secondary`}
         >
           <Icon className="h-4 w-4" />
           {item.label}
@@ -231,7 +231,7 @@ export function Header() {
       <div>
         <button
           onClick={() => setMobileOpenCategory(isOpen ? null : item.label)}
-          className={`flex w-full items-center justify-between gap-3 px-4 py-3 font-racing text-sm uppercase tracking-wider transition-colors ${
+          className={`flex w-full items-center justify-between gap-3 px-4 py-3.5 min-h-[44px] font-racing text-sm uppercase tracking-wider transition-colors ${
             isActive ? "text-primary" : "text-muted-foreground"
           } hover:bg-secondary`}
         >
@@ -260,7 +260,7 @@ export function Header() {
                     key={subItem.path}
                     to={subItem.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 pl-12 pr-4 py-3 text-sm transition-colors ${
+                    className={`flex items-center gap-3 pl-12 pr-4 py-3.5 min-h-[44px] text-sm transition-colors ${
                       isSubActive
                         ? "text-primary"
                         : "text-muted-foreground hover:text-foreground"
@@ -280,13 +280,13 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container relative flex h-20 items-center justify-between py-1 md:min-h-24">
+      <div className="container relative flex h-16 items-center justify-between py-1 sm:h-20 md:min-h-24">
         {/* Logo */}
         <Link to="/" className="flex shrink-0 items-center">
           <img
             src="/images/rtr_logo.png"
             alt="RTR Logo"
-            className="h-20 w-auto object-contain md:h-24"
+            className="h-14 w-auto object-contain sm:h-20 md:h-24"
           />
         </Link>
 
@@ -308,8 +308,8 @@ export function Header() {
           {/* Mobile Menu Toggle */}
           <Button
             variant="ghost"
-            size="sm"
-            className="md:hidden"
+            size="icon"
+            className="md:hidden h-11 w-11"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? (
@@ -368,7 +368,7 @@ export function Header() {
                     <Link
                       to="/admin"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                      className="flex items-center gap-3 px-4 py-3.5 min-h-[44px] text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                     >
                       <Settings className="h-4 w-4" />
                       Admin
@@ -378,7 +378,7 @@ export function Header() {
                         signOut();
                         setMobileMenuOpen(false);
                       }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                      className="flex w-full items-center gap-3 px-4 py-3.5 min-h-[44px] text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                     >
                       <LogOut className="h-4 w-4" />
                       Sair
@@ -388,7 +388,7 @@ export function Header() {
                   <Link
                     to="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                    className="flex items-center gap-3 px-4 py-3.5 min-h-[44px] text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                   >
                     <LogIn className="h-4 w-4" />
                     Login

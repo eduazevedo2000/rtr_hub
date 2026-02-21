@@ -309,7 +309,7 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
               fetchEvents();
               setSpin((s) => s + 360);
             }}
-            className={`h-8 w-8 shrink-0 ${categories.length > 0 ? "rounded-r-none border-r-0" : ""}`}
+            className={`h-10 w-10 shrink-0 ${categories.length > 0 ? "rounded-r-none border-r-0" : ""}`}
           >
             <motion.span
               animate={{ rotate: spin }}
@@ -321,7 +321,7 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
           </Button>
           {categories.length > 0 && (
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="h-8 w-[140px] shrink-0 rounded-l-none border-l-0 text-xs">
+              <SelectTrigger className="h-10 w-[140px] shrink-0 rounded-l-none border-l-0 text-xs">
                 <SelectValue placeholder="Categoria" />
               </SelectTrigger>
               <SelectContent>
@@ -356,7 +356,7 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
 
       {/* Edit Event Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-racing">Editar Ocorrência</DialogTitle>
           </DialogHeader>

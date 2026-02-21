@@ -35,7 +35,7 @@ export const FloatingVideo = () => {
       initial={{ opacity: 0, y: 100 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.5 }}
-      className="fixed bottom-4 right-4 z-50"
+      className="fixed bottom-3 right-3 z-50 sm:bottom-4 sm:right-4"
     >
       <AnimatePresence mode="wait">
         <motion.a 
@@ -50,7 +50,7 @@ export const FloatingVideo = () => {
           transition={{ duration: 0.5 }}
         >
           <motion.div 
-            className="h-64 w-64 rounded-lg overflow-hidden cursor-pointer"
+            className="h-32 w-32 sm:h-48 sm:w-48 md:h-64 md:w-64 rounded-lg overflow-hidden cursor-pointer"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}

@@ -301,7 +301,7 @@ export default function Pilotos() {
             className="text-center"
           >
             <Users className="h-12 w-12 mx-auto mb-4 text-primary" />
-            <h1 className="font-racing text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
               Pilotos
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
@@ -363,7 +363,7 @@ export default function Pilotos() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 rounded-full"
+                        className="h-9 w-9 rounded-full"
                         onClick={(e) => openEdit(driver, e)}
                         aria-label={`Editar ${driver.name}`}
                       >
@@ -373,7 +373,7 @@ export default function Pilotos() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                        className="h-9 w-9 rounded-full hover:bg-destructive/10 hover:text-destructive"
                         onClick={(e) => openDelete(driver, e)}
                         aria-label={`Apagar ${driver.name}`}
                       >
@@ -434,7 +434,7 @@ export default function Pilotos() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-racing">
               {editingDriver ? "Editar Piloto" : "Adicionar Piloto"}

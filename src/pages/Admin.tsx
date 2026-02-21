@@ -507,14 +507,14 @@ export default function Admin() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-2xl mx-auto"
         >
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
-              <h1 className="font-racing text-3xl font-bold">Painel Admin</h1>
+              <h1 className="font-racing text-2xl sm:text-3xl font-bold">Painel Admin</h1>
               <p className="text-muted-foreground">
                 Adiciona ocorrências em tempo real
               </p>
             </div>
-            <Button onClick={() => setShowNewRace(!showNewRace)} variant="outline">
+            <Button onClick={() => setShowNewRace(!showNewRace)} variant="outline" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Nova Corrida
             </Button>
@@ -525,7 +525,7 @@ export default function Admin() {
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
-              className="card-racing p-6 mb-6"
+              className="card-racing p-4 sm:p-6 mb-6"
             >
               <h2 className="font-racing text-lg mb-4">Criar Nova Corrida</h2>
               <form onSubmit={handleCreateRace} className="space-y-4">
@@ -678,7 +678,7 @@ export default function Admin() {
           )}
 
           {/* Race Selector */}
-          <div className="card-racing p-6 mb-6">
+          <div className="card-racing p-4 sm:p-6 mb-6">
             <Label className="mb-2 block">Corrida Ativa</Label>
             <Select value={selectedRace} onValueChange={setSelectedRace}>
               <SelectTrigger className="bg-secondary">
@@ -700,7 +700,7 @@ export default function Admin() {
           </div>
 
           {/* Add Event Form */}
-          <div className="card-racing p-6">
+          <div className="card-racing p-4 sm:p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <Flag className="h-5 w-5 text-primary" />
@@ -824,7 +824,7 @@ export default function Admin() {
                     setEventForm({ ...eventForm, description: e.target.value })
                   }
                   required
-                  className="bg-secondary min-h-[80px]"
+                  className="bg-secondary min-h-[100px]"
                 />
               </div>
 

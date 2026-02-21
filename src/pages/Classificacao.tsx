@@ -630,7 +630,7 @@ export default function Classificacao() {
             transition={{ duration: 0.5 }}
             className="text-center"
           >
-            <h1 className="font-racing text-4xl md:text-6xl font-bold mb-4 racing-glow">
+            <h1 className="font-racing text-2xl sm:text-4xl md:text-6xl font-bold mb-4 racing-glow">
               <span className="text-gradient-racing">Classificação</span>{" "}
               <span className="text-foreground">do Campeonato</span>
             </h1>
@@ -697,40 +697,40 @@ export default function Classificacao() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 text-sm font-racing uppercase tracking-wider">
+                    <th className="text-left py-3 px-3 text-xs font-racing uppercase tracking-wider">
                       Rank
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-racing uppercase tracking-wider">
+                    <th className="text-left py-3 px-3 text-xs font-racing uppercase tracking-wider">
                       No.
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-racing uppercase tracking-wider">
+                    <th className="hidden sm:table-cell text-left py-3 px-3 text-xs font-racing uppercase tracking-wider">
                       Car
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-racing uppercase tracking-wider">
+                    <th className="text-left py-3 px-3 text-xs font-racing uppercase tracking-wider">
                       Team
                     </th>
-                    <th className="text-center py-3 px-4 text-sm font-racing uppercase tracking-wider">
-                      Points
+                    <th className="text-center py-3 px-3 text-xs font-racing uppercase tracking-wider">
+                      Pts
                     </th>
-                    <th className="text-center py-3 px-4 text-sm font-racing uppercase tracking-wider">
+                    <th className="hidden md:table-cell text-center py-3 px-3 text-xs font-racing uppercase tracking-wider">
                       Behind
                     </th>
-                    <th className="text-center py-3 px-4 text-sm font-racing uppercase tracking-wider">
+                    <th className="hidden md:table-cell text-center py-3 px-3 text-xs font-racing uppercase tracking-wider">
                       Starts
                     </th>
-                    <th className="text-center py-3 px-4 text-sm font-racing uppercase tracking-wider">
+                    <th className="hidden lg:table-cell text-center py-3 px-3 text-xs font-racing uppercase tracking-wider">
                       Poles
                     </th>
-                    <th className="text-center py-3 px-4 text-sm font-racing uppercase tracking-wider">
+                    <th className="hidden lg:table-cell text-center py-3 px-3 text-xs font-racing uppercase tracking-wider">
                       Wins
                     </th>
-                    <th className="text-center py-3 px-4 text-sm font-racing uppercase tracking-wider">
+                    <th className="hidden lg:table-cell text-center py-3 px-3 text-xs font-racing uppercase tracking-wider">
                       Top 5
                     </th>
-                    <th className="text-center py-3 px-4 text-sm font-racing uppercase tracking-wider">
+                    <th className="hidden lg:table-cell text-center py-3 px-3 text-xs font-racing uppercase tracking-wider">
                       Top 10
                     </th>
-                    {user && <th className="w-20"></th>}
+                    {user && <th className="w-16 sm:w-20"></th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -749,15 +749,15 @@ export default function Classificacao() {
                           if (user) openEdit(standing);
                         }}
                       >
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-3">
                           <span className="font-bold">{standing.rank}</span>
                         </td>
-                        <td className="py-3 px-4">
-                          <span className="inline-flex items-center justify-center px-2 py-1 text-sm font-bold text-white bg-primary rounded">
+                        <td className="py-3 px-3">
+                          <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-primary rounded">
                             {standing.car_number}
                           </span>
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="hidden sm:table-cell py-3 px-3">
                           {standing.car_logo_url ? (
                             <img
                               src={standing.car_logo_url}
@@ -772,38 +772,38 @@ export default function Classificacao() {
                             <div className="h-8 w-8 bg-muted rounded" />
                           )}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-3">
                           <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center">
+                            <span className="hidden sm:inline-flex items-center">
                               {renderFlag(standing.country_code)}
                             </span>
-                            <span>{standing.team_name}</span>
+                            <span className="text-sm">{standing.team_name}</span>
                           </div>
                         </td>
-                        <td className="text-center py-3 px-4 font-bold">
+                        <td className="text-center py-3 px-3 font-bold text-sm">
                           {standing.points}
                         </td>
-                        <td className="text-center py-3 px-4">
+                        <td className="hidden md:table-cell text-center py-3 px-3 text-sm">
                           {standing.behind}
                         </td>
-                        <td className="text-center py-3 px-4">
+                        <td className="hidden md:table-cell text-center py-3 px-3 text-sm">
                           {standing.starts}
                         </td>
-                        <td className="text-center py-3 px-4">
+                        <td className="hidden lg:table-cell text-center py-3 px-3 text-sm">
                           {standing.poles}
                         </td>
-                        <td className="text-center py-3 px-4">
+                        <td className="hidden lg:table-cell text-center py-3 px-3 text-sm">
                           {standing.wins}
                         </td>
-                        <td className="text-center py-3 px-4">
+                        <td className="hidden lg:table-cell text-center py-3 px-3 text-sm">
                           {standing.top5}
                         </td>
-                        <td className="text-center py-3 px-4">
+                        <td className="hidden lg:table-cell text-center py-3 px-3 text-sm">
                           {standing.top10}
                         </td>
                         {user && (
-                          <td className="py-3 px-4">
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <td className="py-3 px-3">
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -811,7 +811,7 @@ export default function Classificacao() {
                                   e.stopPropagation();
                                   openEdit(standing);
                                 }}
-                                className="h-8 w-8"
+                                className="h-9 w-9"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -822,7 +822,7 @@ export default function Classificacao() {
                                   e.stopPropagation();
                                   openDelete(standing);
                                 }}
-                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                className="h-9 w-9 text-destructive hover:text-destructive"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -841,14 +841,14 @@ export default function Classificacao() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingStanding ? "Editar Equipa" : "Adicionar Equipa"}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="class">Classe</Label>
                 <Select
@@ -877,7 +877,7 @@ export default function Classificacao() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="car_number">Número do Carro</Label>
                 <Input
@@ -947,7 +947,7 @@ export default function Classificacao() {
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="points">Pontos</Label>
                 <Input
@@ -980,7 +980,7 @@ export default function Classificacao() {
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
                 <Label htmlFor="poles">Poles</Label>
                 <Input
@@ -1062,7 +1062,7 @@ export default function Classificacao() {
 
       {/* PDF Import Dialog */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl md:max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-racing">Importar Classificação via PDF</DialogTitle>
           </DialogHeader>

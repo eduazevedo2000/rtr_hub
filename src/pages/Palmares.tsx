@@ -214,7 +214,7 @@ export default function Palmares() {
             className="text-center"
           >
             <Trophy className="h-12 w-12 mx-auto mb-4 text-racing-yellow" />
-            <h1 className="font-racing text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
               Palmarés
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
@@ -438,7 +438,7 @@ export default function Palmares() {
                 }
               }}
             >
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogContent className="max-w-[95vw] sm:max-w-3xl md:max-w-4xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="font-racing text-2xl">
                     {races.find((r) => r.id === selectedRaceId)?.name || "Eventos da Corrida"}

@@ -254,7 +254,7 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
     return (
       <>
         <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="max-w-[95vw] sm:max-w-lg">
             <DialogHeader>
               <DialogTitle className="font-racing">
                 {editingResult ? "Editar resultado" : "Adicionar resultado"}
@@ -420,7 +420,7 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-full"
+                      className="h-9 w-9 rounded-full"
                       onClick={() => openEdit(result)}
                       aria-label={`Editar: ${result.driver?.name}`}
                     >
@@ -430,7 +430,7 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                      className="h-9 w-9 rounded-full hover:bg-destructive/10 hover:text-destructive"
                       onClick={() => openDelete(result)}
                       aria-label={`Apagar: ${result.driver?.name}`}
                     >

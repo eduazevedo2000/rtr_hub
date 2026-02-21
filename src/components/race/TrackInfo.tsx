@@ -349,7 +349,7 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
             onClick={() => setExpandedImage(null)}
           >
             <motion.div
-              className="relative w-full max-w-5xl"
+              className="relative w-full max-w-[95vw] sm:max-w-3xl md:max-w-5xl"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
@@ -359,7 +359,7 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
               <button
                 type="button"
                 onClick={() => setExpandedImage(null)}
-                className="absolute -top-3 -right-3 rounded-full bg-black/80 text-white p-2 shadow-lg hover:bg-black"
+                className="absolute -top-3 -right-3 rounded-full bg-black/80 text-white p-2.5 shadow-lg hover:bg-black min-h-[40px] min-w-[40px] flex items-center justify-center"
                 aria-label="Fechar"
               >
                 <X className="h-4 w-4" />

@@ -184,13 +184,13 @@ export function RaceDrivers({ driverIds }: RaceDriversProps) {
         )}
       </AnimatePresence>
       <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="font-racing">Piloto</DialogTitle>
           </DialogHeader>
           {selectedDriver && (
             <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
-              <div className="h-40 w-40 md:h-56 md:w-56 rounded-full overflow-hidden border-2 border-primary/20 bg-secondary/50 flex items-center justify-center">
+              <div className="h-32 w-32 sm:h-40 sm:w-40 md:h-56 md:w-56 rounded-full overflow-hidden border-2 border-primary/20 bg-secondary/50 flex items-center justify-center shrink-0">
                 {selectedDriver.image_url ? (
                   <img
                     src={selectedDriver.image_url}

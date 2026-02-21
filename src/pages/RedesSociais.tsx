@@ -162,7 +162,7 @@ export default function RedesSociais() {
             className="text-center"
           >
             <Globe className="h-12 w-12 mx-auto mb-4 text-primary" />
-            <h1 className="font-racing text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
               Redes Sociais
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
@@ -174,7 +174,7 @@ export default function RedesSociais() {
 
       {/* Content */}
       <main className="container py-12">
-        <div className="mx-auto max-w-4xl space-y-12">
+        <div className="mx-auto max-w-4xl space-y-8 sm:space-y-12">
           {sections.map((section, sectionIndex) => (
             <motion.section
               key={section.title}
@@ -204,7 +204,7 @@ export default function RedesSociais() {
                       transition={{ delay: sectionIndex * 0.1 + index * 0.08 }}
                       className="card-racing overflow-hidden group cursor-pointer hover:border-primary/50 transition-colors flex min-w-0 flex-col"
                     >
-                      <div className="p-6 flex-1 flex flex-col">
+                      <div className="p-4 sm:p-6 flex-1 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
                           <div
                             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg overflow-hidden"

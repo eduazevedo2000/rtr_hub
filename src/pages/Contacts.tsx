@@ -32,7 +32,7 @@ export default function Contacts() {
             className="text-center"
           >
             <Mail className="h-12 w-12 mx-auto mb-4 text-primary" />
-            <h1 className="font-racing text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
               Contactos
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
@@ -58,7 +58,7 @@ export default function Contacts() {
                 transition={{ delay: index * 0.1 }}
                 className="card-racing overflow-hidden group cursor-pointer hover:border-primary/50 transition-colors flex flex-col w-full max-w-sm"
               >
-                <div className="p-6 flex-1 flex flex-col">
+                <div className="p-4 sm:p-6 flex-1 flex flex-col">
                   <div className="flex items-center justify-between mb-3">
                     <Icon className="h-8 w-8 text-primary" />
                     {item.label !== "Email" && (

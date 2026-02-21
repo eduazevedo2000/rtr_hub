@@ -191,7 +191,7 @@ export default function FAQ() {
             className="text-center"
           >
             <HelpCircle className="h-12 w-12 mx-auto mb-4 text-primary" />
-            <h1 className="font-racing text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
               FAQ
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
@@ -249,7 +249,7 @@ export default function FAQ() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 shrink-0 rounded-full"
+                            className="h-9 w-9 shrink-0 rounded-full"
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
@@ -263,7 +263,7 @@ export default function FAQ() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 shrink-0 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                            className="h-9 w-9 shrink-0 rounded-full hover:bg-destructive/10 hover:text-destructive"
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
@@ -276,7 +276,7 @@ export default function FAQ() {
                         </div>
                       )}
                     </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground whitespace-pre-wrap">
+                    <AccordionContent className="text-muted-foreground whitespace-pre-wrap break-words overflow-wrap-anywhere">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -288,7 +288,7 @@ export default function FAQ() {
       </main>
 
       <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-racing">
               {editingFaq ? "Editar pergunta" : "Adicionar pergunta"}
@@ -333,7 +333,7 @@ export default function FAQ() {
                     order_index: parseInt(e.target.value, 10) || 0,
                   }))
                 }
-                className="mt-1.5 w-24"
+                className="mt-1.5 w-full sm:w-24"
               />
             </div>
             <DialogFooter>

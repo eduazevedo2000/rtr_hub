@@ -389,7 +389,7 @@ export default function Calendario() {
             >
               <CalendarIcon className="h-8 w-8 text-primary" />
             </motion.div>
-            <h1 className="font-racing text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
               Calendário
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto">
@@ -435,7 +435,7 @@ export default function Calendario() {
                     variant="ghost"
                     size="icon"
                     onClick={goToPrevMonth}
-                    className="h-9 w-9 rounded-lg"
+                    className="h-10 w-10 rounded-lg"
                     aria-label="Mês anterior"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -444,7 +444,7 @@ export default function Calendario() {
                     variant="ghost"
                     size="sm"
                     onClick={goToToday}
-                    className="font-racing text-sm h-9 px-3 rounded-lg"
+                    className="font-racing text-sm h-10 px-3 rounded-lg"
                   >
                     Hoje
                   </Button>
@@ -452,7 +452,7 @@ export default function Calendario() {
                     variant="ghost"
                     size="icon"
                     onClick={goToNextMonth}
-                    className="h-9 w-9 rounded-lg"
+                    className="h-10 w-10 rounded-lg"
                     aria-label="Mês seguinte"
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -489,7 +489,7 @@ export default function Calendario() {
                         animate={{ opacity: 1 }}
                         transition={{ delay: i * 0.008 }}
                         onClick={() => setSelectedDate(cell.date)}
-                        className={`min-h-[52px] md:min-h-[64px] flex flex-col items-center justify-start pt-2 text-left transition-colors rounded-md ${
+                        className={`min-h-[52px] sm:min-h-[64px] flex flex-col items-center justify-start pt-2 text-left transition-colors rounded-md ${
                           !cell.isCurrentMonth
                             ? "text-muted-foreground/60"
                             : "text-foreground hover:bg-secondary/50"
@@ -517,7 +517,7 @@ export default function Calendario() {
                               />
                             ))}
                             {dayRaces.length > 3 && (
-                              <span className="text-[10px] font-racing text-muted-foreground">
+                              <span className="text-xs font-racing text-muted-foreground">
                                 +{dayRaces.length - 3}
                               </span>
                             )}
@@ -584,7 +584,7 @@ export default function Calendario() {
 
       {/* Add Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-racing text-xl">
               Adicionar Corrida
@@ -713,7 +713,7 @@ export default function Calendario() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-racing text-xl">
               Editar Corrida
@@ -840,7 +840,7 @@ export default function Calendario() {
 
       {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-racing text-xl text-destructive">
               Eliminar corrida
@@ -935,7 +935,7 @@ function RaceCard({
               variant="ghost"
               size="icon"
               onClick={onEdit}
-              className="h-9 w-9 rounded-full"
+              className="h-10 w-10 rounded-full"
               aria-label="Editar"
             >
               <Pencil className="h-4 w-4" />
@@ -944,7 +944,7 @@ function RaceCard({
               variant="ghost"
               size="icon"
               onClick={onDelete}
-              className="h-9 w-9 rounded-full hover:bg-destructive/20 hover:text-destructive"
+              className="h-10 w-10 rounded-full hover:bg-destructive/20 hover:text-destructive"
               aria-label="Eliminar"
             >
               <Trash2 className="h-4 w-4" />

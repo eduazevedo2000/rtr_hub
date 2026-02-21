@@ -173,7 +173,7 @@ const Index = () => {
               </span>
             </div>
             
-            <h1 className="font-racing text-4xl md:text-6xl font-bold mb-4 racing-glow">
+            <h1 className="font-racing text-2xl sm:text-4xl md:text-6xl font-bold mb-4 racing-glow">
               <span className="text-gradient-racing">RIC TEAM</span>{" "}
               <span className="text-foreground">RACING</span>
             </h1>
@@ -192,13 +192,13 @@ const Index = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="relative inline-flex items-center gap-6 px-6 py-4 rounded-xl bg-card border border-border"
+                className="relative inline-flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 px-4 sm:px-6 py-4 rounded-xl bg-card border border-border w-full sm:w-auto text-left"
               >
                 {user && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-card border border-border hover:bg-primary/20"
+                    className="absolute -top-2 -right-2 h-9 w-9 rounded-full bg-card border border-border hover:bg-primary/20"
                     onClick={openEditDialog}
                     title="Editar corrida"
                   >
@@ -209,7 +209,7 @@ const Index = () => {
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Corrida</p>
                   <p className="font-racing font-bold">{activeRace.name}</p>
                 </div>
-                <div className="h-8 w-px bg-border" />
+                <div className="hidden sm:block h-8 w-px bg-border" />
                 <div className="text-left">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Pista</p>
                   <p className="font-racing font-bold">{activeRace.track}</p>
@@ -324,7 +324,7 @@ const Index = () => {
 
       {/* Edit Race Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-racing">Editar Corrida</DialogTitle>
           </DialogHeader>
