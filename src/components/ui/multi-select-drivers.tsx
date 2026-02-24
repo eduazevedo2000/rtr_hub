@@ -11,9 +11,11 @@ interface MultiSelectDriversProps {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
   label?: string;
+  /** When provided, only show drivers whose id is in this list */
+  filterIds?: string[];
 }
 
-export function MultiSelectDrivers({ selectedIds, onChange, label = "Pilotos" }: MultiSelectDriversProps) {
+export function MultiSelectDrivers({ selectedIds, onChange, label = "Pilotos", filterIds }: MultiSelectDriversProps) {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,7 +57,7 @@ export function MultiSelectDrivers({ selectedIds, onChange, label = "Pilotos" }:
       <Label>{label} ({selectedIds.length} selecionados)</Label>
       <ScrollArea className="h-48 rounded-md border border-input bg-secondary p-2">
         <div className="space-y-1">
-          {drivers.map((driver) => {
+          {(filterIds ? drivers.filter((d) => filterIds.includes(d.id)) : drivers).map((driver) => {
             const isSelected = selectedIds.includes(driver.id);
             return (
               <button

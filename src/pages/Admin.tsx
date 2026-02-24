@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, Flag, Loader2, Trash2 } from "lucide-react";
+import { Plus, Flag, Loader2, Trash2, Cloud, Map, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -145,6 +145,13 @@ export default function Admin() {
     duration_hours: "",
     duration_minutes: "",
   });
+  const [newRaceGroups, setNewRaceGroups] = useState<{ name: string; driverIds: string[] }[]>([]);
+  const [newRaceWeatherFile, setNewRaceWeatherFile] = useState<File | null>(null);
+  const [newRaceMapFile, setNewRaceMapFile] = useState<File | null>(null);
+  const [newRaceWeatherPreview, setNewRaceWeatherPreview] = useState<string | null>(null);
+  const [newRaceMapPreview, setNewRaceMapPreview] = useState<string | null>(null);
+  const newRaceWeatherRef = useRef<HTMLInputElement>(null);
+  const newRaceMapRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!authLoading && !adminLoading) {
@@ -243,6 +250,9 @@ export default function Admin() {
       weather: newRaceForm.weather || null,
       drivers: newRaceForm.drivers.length > 0 ? newRaceForm.drivers : null,
       duration_hours: totalHours > 0 ? totalHours : null,
+      driver_groups: newRaceGroups.length > 0
+        ? Object.fromEntries(newRaceGroups.map((g) => [g.name, g.driverIds]))
+        : null,
     };
 
     const { data, error } = await supabase
@@ -251,21 +261,81 @@ export default function Admin() {
       .select()
       .single();
 
-    setSubmitting(false);
-
     if (error) {
+      setSubmitting(false);
       toast({
         variant: "destructive",
         title: "Erro",
         description: error.message,
       });
-    } else {
-      toast({ title: "Corrida criada!" });
-      setRaces([data, ...races]);
-      setSelectedRace(data.id);
-      setShowNewRace(false);
-      setNewRaceForm({ name: "", track: "", tipo: "", is_active: true, num_cars: "", num_classes: "", weather: "", drivers: [], duration_hours: "", duration_minutes: "" });
+      return;
     }
+
+    const newRaceId = data.id;
+
+    // Upload optional images
+    const uploadImage = async (file: File, type: "weather" | "map") => {
+      const bucket = type === "weather" ? "track-weather" : "track-images";
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${newRaceId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file, { cacheControl: "3600", upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+      const { data: imageData, error: imageError } = await supabase
+        .from("images")
+        .insert({
+          storage_path: filePath,
+          url: publicUrl,
+          filename: file.name,
+          mime_type: file.type,
+          size_bytes: file.size,
+          description: type === "weather" ? "Weather forecast" : "Track map",
+          category: type === "weather" ? "weather" : "track-map",
+        })
+        .select()
+        .single();
+
+      if (imageError) throw imageError;
+      return imageData;
+    };
+
+    try {
+      const weatherImage = newRaceWeatherFile ? await uploadImage(newRaceWeatherFile, "weather") : null;
+      const mapImage = newRaceMapFile ? await uploadImage(newRaceMapFile, "map") : null;
+
+      if (weatherImage || mapImage) {
+        await supabase.from("track_info").insert({
+          race_id: newRaceId,
+          ...(weatherImage ? { weather_image_id: weatherImage.id } : {}),
+          ...(mapImage ? { track_map_id: mapImage.id } : {}),
+        });
+      }
+    } catch (imgError: any) {
+      toast({
+        variant: "destructive",
+        title: "Corrida criada, mas erro ao carregar imagem",
+        description: imgError.message,
+      });
+    }
+
+    setSubmitting(false);
+    toast({ title: "Corrida criada!" });
+    setRaces([data, ...races]);
+    setSelectedRace(data.id);
+    setShowNewRace(false);
+    setNewRaceForm({ name: "", track: "", tipo: "", is_active: true, num_cars: "", num_classes: "", weather: "", drivers: [], duration_hours: "", duration_minutes: "" });
+    setNewRaceGroups([]);
+    setNewRaceWeatherFile(null);
+    setNewRaceMapFile(null);
+    setNewRaceWeatherPreview(null);
+    setNewRaceMapPreview(null);
   };
 
   const handleCreateEvent = async (e: React.FormEvent) => {
@@ -658,6 +728,173 @@ export default function Admin() {
                       }
                       label="Pilotos a Participar"
                     />
+                  </div>
+
+                  {/* Driver groups */}
+                  <div className="space-y-3 sm:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Agrupamentos de Equipa <span className="text-xs text-muted-foreground">(opcional)</span></Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-xs"
+                        onClick={() =>
+                          setNewRaceGroups([...newRaceGroups, { name: `Equipa ${newRaceGroups.length + 1}`, driverIds: [] }])
+                        }
+                      >
+                        <Plus className="h-3 w-3" />
+                        Adicionar grupo
+                      </Button>
+                    </div>
+                    {newRaceGroups.map((group, gi) => {
+                      const usedByOthers = newRaceGroups
+                        .filter((_, i) => i !== gi)
+                        .flatMap((g) => g.driverIds);
+                      const availableIds = newRaceForm.drivers.filter(
+                        (id) => !usedByOthers.includes(id)
+                      );
+                      return (
+                        <div key={gi} className="rounded-lg border border-border bg-secondary/30 p-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={group.name}
+                              onChange={(e) => {
+                                const updated = [...newRaceGroups];
+                                updated[gi] = { ...group, name: e.target.value };
+                                setNewRaceGroups(updated);
+                              }}
+                              className="bg-background h-8 text-sm font-racing"
+                              placeholder="Nome da equipa"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setNewRaceGroups(newRaceGroups.filter((_, i) => i !== gi))}
+                              className="rounded-full p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <MultiSelectDrivers
+                            selectedIds={group.driverIds}
+                            onChange={(ids) => {
+                              const updated = [...newRaceGroups];
+                              updated[gi] = { ...group, driverIds: ids };
+                              setNewRaceGroups(updated);
+                            }}
+                            filterIds={[...availableIds, ...group.driverIds]}
+                            label="Pilotos deste grupo"
+                          />
+                        </div>
+                      );
+                    })}
+                    {newRaceGroups.length > 0 && newRaceForm.drivers.length === 0 && (
+                      <p className="text-xs text-muted-foreground">Seleciona primeiro os pilotos a participar para os poder distribuir por grupos.</p>
+                    )}
+                  </div>
+
+                  {/* Weather image upload */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5">
+                      <Cloud className="h-3.5 w-3.5 text-primary" />
+                      Previsão do Tempo <span className="text-xs text-muted-foreground">(opcional)</span>
+                    </Label>
+                    <input
+                      ref={newRaceWeatherRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setNewRaceWeatherFile(file);
+                          setNewRaceWeatherPreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                    {newRaceWeatherPreview ? (
+                      <div className="relative">
+                        <img
+                          src={newRaceWeatherPreview}
+                          alt="Previsão do tempo"
+                          className="w-full rounded-lg object-cover max-h-40"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewRaceWeatherFile(null);
+                            setNewRaceWeatherPreview(null);
+                            if (newRaceWeatherRef.current) newRaceWeatherRef.current.value = "";
+                          }}
+                          className="absolute top-1 right-1 rounded-full bg-black/70 text-white p-1 hover:bg-black"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2 border-dashed"
+                        onClick={() => newRaceWeatherRef.current?.click()}
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                        Carregar imagem
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Track map upload */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5">
+                      <Map className="h-3.5 w-3.5 text-primary" />
+                      Mapa da Pista <span className="text-xs text-muted-foreground">(opcional)</span>
+                    </Label>
+                    <input
+                      ref={newRaceMapRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setNewRaceMapFile(file);
+                          setNewRaceMapPreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                    {newRaceMapPreview ? (
+                      <div className="relative">
+                        <img
+                          src={newRaceMapPreview}
+                          alt="Mapa da pista"
+                          className="w-full rounded-lg object-cover max-h-40"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewRaceMapFile(null);
+                            setNewRaceMapPreview(null);
+                            if (newRaceMapRef.current) newRaceMapRef.current.value = "";
+                          }}
+                          className="absolute top-1 right-1 rounded-full bg-black/70 text-white p-1 hover:bg-black"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2 border-dashed"
+                        onClick={() => newRaceMapRef.current?.click()}
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                        Carregar imagem
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">

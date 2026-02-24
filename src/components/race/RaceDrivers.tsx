@@ -14,9 +14,74 @@ type Driver = Database["public"]["Tables"]["drivers"]["Row"];
 
 interface RaceDriversProps {
   driverIds?: string[] | null;
+  driverGroups?: Record<string, string[]> | null;
 }
 
-export function RaceDrivers({ driverIds }: RaceDriversProps) {
+function DriverCard({ driver, onClick, compact = false }: { driver: Driver; onClick: () => void; compact?: boolean }) {
+  if (compact) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="flex items-center gap-3 p-2 md:p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer"
+        onClick={onClick}
+      >
+        {driver.image_url ? (
+          <img
+            src={driver.image_url}
+            alt={driver.name}
+            className="h-10 w-10 md:h-12 md:w-12 rounded-full object-cover border-2 border-primary/20"
+          />
+        ) : (
+          <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
+            <Users className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-racing font-bold text-sm md:text-base truncate">{driver.name}</p>
+          {driver.known_as && (
+            <p className="text-xs text-muted-foreground truncate">"{driver.known_as}"</p>
+          )}
+          {driver.category && (
+            <p className="text-xs font-racing uppercase tracking-wider text-primary/80">{driver.category}</p>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="flex items-center gap-4 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer"
+      onClick={onClick}
+    >
+      {driver.image_url ? (
+        <img
+          src={driver.image_url}
+          alt={driver.name}
+          className="h-14 w-14 rounded-full object-cover border-2 border-primary/20"
+        />
+      ) : (
+        <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
+          <Users className="h-6 w-6 text-primary" />
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="font-racing font-bold text-base truncate">{driver.name}</p>
+        {driver.known_as && (
+          <p className="text-sm text-muted-foreground truncate">"{driver.known_as}"</p>
+        )}
+        {driver.category && (
+          <p className="text-xs font-racing uppercase tracking-wider text-primary/80">{driver.category}</p>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+export function RaceDrivers({ driverIds, driverGroups }: RaceDriversProps) {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -68,6 +133,19 @@ export function RaceDrivers({ driverIds }: RaceDriversProps) {
     );
   }
 
+  const driverMap = Object.fromEntries(drivers.map((d) => [d.id, d]));
+
+  // Build group sections when driverGroups is defined and has entries
+  const groups = driverGroups && Object.keys(driverGroups).length > 0
+    ? Object.entries(driverGroups)
+    : null;
+
+  // IDs already placed in a group
+  const groupedIds = groups ? new Set(groups.flatMap(([, ids]) => ids)) : new Set<string>();
+
+  // Drivers not assigned to any group
+  const ungroupedDrivers = drivers.filter((d) => !groupedIds.has(d.id));
+
   return (
     <motion.div layout className="card-racing p-4 md:p-6">
       <button
@@ -94,45 +172,57 @@ export function RaceDrivers({ driverIds }: RaceDriversProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="grid gap-3 sm:grid-cols-2"
           >
-            {drivers.map((driver, index) => (
-              <motion.div
-                key={driver.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.03 }}
-                className="flex items-center gap-4 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer"
-                onClick={() => setSelectedDriver(driver)}
-              >
-                {driver.image_url ? (
-                  <img
-                    src={driver.image_url}
-                    alt={driver.name}
-                    className="h-14 w-14 rounded-full object-cover border-2 border-primary/20"
-                  />
-                ) : (
-                  <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
-                    <Users className="h-6 w-6 text-primary" />
+            {groups ? (
+              <div className="space-y-4">
+                {groups.map(([groupName, ids]) => {
+                  const groupDrivers = ids.map((id) => driverMap[id]).filter(Boolean);
+                  if (groupDrivers.length === 0) return null;
+                  return (
+                    <div key={groupName}>
+                      <p className="text-xs font-racing uppercase tracking-widest text-primary mb-2 pl-1">
+                        {groupName}
+                      </p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {groupDrivers.map((driver) => (
+                          <DriverCard
+                            key={driver.id}
+                            driver={driver}
+                            onClick={() => setSelectedDriver(driver)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                {ungroupedDrivers.length > 0 && (
+                  <div>
+                    <p className="text-xs font-racing uppercase tracking-widest text-muted-foreground mb-2 pl-1">
+                      Outros
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {ungroupedDrivers.map((driver) => (
+                        <DriverCard
+                          key={driver.id}
+                          driver={driver}
+                          onClick={() => setSelectedDriver(driver)}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-racing font-bold text-base truncate">
-                    {driver.name}
-                  </p>
-                  {driver.known_as && (
-                    <p className="text-sm text-muted-foreground truncate">
-                      "{driver.known_as}"
-                    </p>
-                  )}
-                  {driver.category && (
-                    <p className="text-xs font-racing uppercase tracking-wider text-primary/80">
-                      {driver.category}
-                    </p>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {drivers.map((driver) => (
+                  <DriverCard
+                    key={driver.id}
+                    driver={driver}
+                    onClick={() => setSelectedDriver(driver)}
+                  />
+                ))}
+              </div>
+            )}
           </motion.div>
         ) : (
           <motion.div
@@ -141,48 +231,64 @@ export function RaceDrivers({ driverIds }: RaceDriversProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="space-y-2 md:space-y-3"
           >
-            {drivers.map((driver, index) => (
-              <motion.div
-                key={driver.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="flex items-center gap-3 p-2 md:p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer"
-                onClick={() => setSelectedDriver(driver)}
-              >
-                {driver.image_url ? (
-                  <img
-                    src={driver.image_url}
-                    alt={driver.name}
-                    className="h-10 w-10 md:h-12 md:w-12 rounded-full object-cover border-2 border-primary/20"
-                  />
-                ) : (
-                  <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
-                    <Users className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+            {groups ? (
+              <div className="space-y-4">
+                {groups.map(([groupName, ids]) => {
+                  const groupDrivers = ids.map((id) => driverMap[id]).filter(Boolean);
+                  if (groupDrivers.length === 0) return null;
+                  return (
+                    <div key={groupName}>
+                      <p className="text-xs font-racing uppercase tracking-widest text-primary mb-2 pl-1">
+                        {groupName}
+                      </p>
+                      <div className="space-y-2 md:space-y-3">
+                        {groupDrivers.map((driver) => (
+                          <DriverCard
+                            key={driver.id}
+                            driver={driver}
+                            compact
+                            onClick={() => setSelectedDriver(driver)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                {ungroupedDrivers.length > 0 && (
+                  <div>
+                    <p className="text-xs font-racing uppercase tracking-widest text-muted-foreground mb-2 pl-1">
+                      Outros
+                    </p>
+                    <div className="space-y-2 md:space-y-3">
+                      {ungroupedDrivers.map((driver) => (
+                        <DriverCard
+                          key={driver.id}
+                          driver={driver}
+                          compact
+                          onClick={() => setSelectedDriver(driver)}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-racing font-bold text-sm md:text-base truncate">
-                    {driver.name}
-                  </p>
-                  {driver.known_as && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      "{driver.known_as}"
-                    </p>
-                  )}
-                  {driver.category && (
-                    <p className="text-xs font-racing uppercase tracking-wider text-primary/80">
-                      {driver.category}
-                    </p>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+              </div>
+            ) : (
+              <div className="space-y-2 md:space-y-3">
+                {drivers.map((driver) => (
+                  <DriverCard
+                    key={driver.id}
+                    driver={driver}
+                    compact
+                    onClick={() => setSelectedDriver(driver)}
+                  />
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
+
       <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl">
           <DialogHeader>
@@ -202,13 +308,9 @@ export function RaceDrivers({ driverIds }: RaceDriversProps) {
                 )}
               </div>
               <div className="flex-1 text-center md:text-left">
-                <h3 className="font-racing text-2xl font-bold">
-                  {selectedDriver.name}
-                </h3>
+                <h3 className="font-racing text-2xl font-bold">{selectedDriver.name}</h3>
                 {selectedDriver.known_as && (
-                  <p className="text-muted-foreground mt-1">
-                    "{selectedDriver.known_as}"
-                  </p>
+                  <p className="text-muted-foreground mt-1">"{selectedDriver.known_as}"</p>
                 )}
                 {selectedDriver.category && (
                   <p className="mt-4 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-racing uppercase tracking-wider text-primary">

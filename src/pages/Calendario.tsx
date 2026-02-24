@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar as CalendarIcon,
@@ -10,6 +10,10 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  Cloud,
+  Map,
+  Upload,
+  X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
@@ -32,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MultiSelectDrivers } from "@/components/ui/multi-select-drivers";
 import type { Database } from "@/integrations/supabase/types";
 
 type Race = Database["public"]["Tables"]["races"]["Row"];
@@ -114,7 +119,28 @@ export default function Calendario() {
     num_cars: "",
     num_classes: "",
     weather: "",
+    drivers: [] as string[],
   });
+
+  // Group state for add/edit dialogs
+  const [groups, setGroups] = useState<{ name: string; driverIds: string[] }[]>([]);
+
+  // Image state for add/edit dialogs
+  const [weatherFile, setWeatherFile] = useState<File | null>(null);
+  const [mapFile, setMapFile] = useState<File | null>(null);
+  const [weatherPreview, setWeatherPreview] = useState<string | null>(null);
+  const [mapPreview, setMapPreview] = useState<string | null>(null);
+  const weatherRef = useRef<HTMLInputElement>(null);
+  const mapRef = useRef<HTMLInputElement>(null);
+
+  const resetImageState = () => {
+    setWeatherFile(null);
+    setMapFile(null);
+    setWeatherPreview(null);
+    setMapPreview(null);
+    if (weatherRef.current) weatherRef.current.value = "";
+    if (mapRef.current) mapRef.current.value = "";
+  };
 
   // Calendar view: default to current month
   const [viewDate, setViewDate] = useState(() => new Date());
@@ -236,7 +262,10 @@ export default function Calendario() {
       num_cars: "",
       num_classes: "",
       weather: "",
+      drivers: [],
     });
+    resetImageState();
+    setGroups([]);
     setAddDialogOpen(true);
   };
 
@@ -250,13 +279,83 @@ export default function Calendario() {
       num_cars: race.num_cars?.toString() ?? "",
       num_classes: race.num_classes?.toString() ?? "",
       weather: race.weather ?? "",
+      drivers: (race.drivers ?? []) as string[],
     });
+    resetImageState();
+    // Load existing driver groups
+    const existingGroups = race.driver_groups as Record<string, string[]> | null;
+    setGroups(
+      existingGroups
+        ? Object.entries(existingGroups).map(([name, driverIds]) => ({ name, driverIds }))
+        : []
+    );
     setEditDialogOpen(true);
   };
 
   const openDelete = (race: Race) => {
     setSelectedRace(race);
     setDeleteDialogOpen(true);
+  };
+
+  const uploadRaceImage = async (raceId: string, file: File, type: "weather" | "map") => {
+    const bucket = type === "weather" ? "track-weather" : "track-images";
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `${raceId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, file, { cacheControl: "3600", upsert: false });
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+    const { data: imageData, error: imageError } = await supabase
+      .from("images")
+      .insert({
+        storage_path: filePath,
+        url: publicUrl,
+        filename: file.name,
+        mime_type: file.type,
+        size_bytes: file.size,
+        description: type === "weather" ? "Weather forecast" : "Track map",
+        category: type === "weather" ? "weather" : "track-map",
+      })
+      .select()
+      .single();
+    if (imageError) throw imageError;
+    return imageData;
+  };
+
+  const saveTrackInfo = async (raceId: string) => {
+    if (!weatherFile && !mapFile) return;
+    try {
+      const weatherImg = weatherFile ? await uploadRaceImage(raceId, weatherFile, "weather") : null;
+      const mapImg = mapFile ? await uploadRaceImage(raceId, mapFile, "map") : null;
+
+      const { data: existing } = await supabase
+        .from("track_info")
+        .select("id")
+        .eq("race_id", raceId)
+        .maybeSingle();
+
+      const fields = {
+        ...(weatherImg ? { weather_image_id: weatherImg.id } : {}),
+        ...(mapImg ? { track_map_id: mapImg.id } : {}),
+      };
+
+      if (existing) {
+        await supabase.from("track_info").update(fields).eq("id", existing.id);
+      } else {
+        await supabase.from("track_info").insert({ race_id: raceId, ...fields });
+      }
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Corrida guardada, mas erro ao carregar imagem",
+        description: err.message,
+      });
+    }
   };
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -273,7 +372,7 @@ export default function Calendario() {
 
     const dateIso = form.dateTime ? new Date(form.dateTime).toISOString() : new Date().toISOString();
 
-    const { error } = await supabase.from("races").insert([
+    const { data: inserted, error } = await supabase.from("races").insert([
       {
         name: form.name,
         track: form.track,
@@ -283,26 +382,35 @@ export default function Calendario() {
         num_cars: form.num_cars ? parseInt(form.num_cars, 10) : null,
         num_classes: form.num_classes ? parseInt(form.num_classes, 10) : null,
         weather: form.weather || null,
+        drivers: form.drivers.length > 0 ? form.drivers : null,
+        driver_groups: groups.length > 0
+          ? Object.fromEntries(groups.map((g) => [g.name, g.driverIds]))
+          : null,
       },
-    ]);
-
-    setSubmitting(false);
+    ]).select().single();
 
     if (error) {
+      setSubmitting(false);
       toast({
         variant: "destructive",
         title: "Erro",
         description: error.message,
       });
-    } else {
-      toast({ title: "Corrida adicionada!" });
-      setAddDialogOpen(false);
-      const { data } = await supabase
-        .from("races")
-        .select("*")
-        .order("date", { ascending: true });
-      if (data) setRaces(data);
+      return;
     }
+
+    await saveTrackInfo(inserted.id);
+
+    setSubmitting(false);
+    toast({ title: "Corrida adicionada!" });
+    setAddDialogOpen(false);
+    resetImageState();
+    setGroups([]);
+    const { data } = await supabase
+      .from("races")
+      .select("*")
+      .order("date", { ascending: true });
+    if (data) setRaces(data);
   };
 
   const handleEdit = async (e: React.FormEvent) => {
@@ -322,8 +430,16 @@ export default function Calendario() {
         num_cars: form.num_cars ? parseInt(form.num_cars, 10) : null,
         num_classes: form.num_classes ? parseInt(form.num_classes, 10) : null,
         weather: form.weather || null,
+        drivers: form.drivers.length > 0 ? form.drivers : null,
+        driver_groups: groups.length > 0
+          ? Object.fromEntries(groups.map((g) => [g.name, g.driverIds]))
+          : null,
       })
       .eq("id", selectedRace.id);
+
+    if (!error) {
+      await saveTrackInfo(selectedRace.id);
+    }
 
     setSubmitting(false);
 
@@ -336,6 +452,8 @@ export default function Calendario() {
     } else {
       toast({ title: "Corrida atualizada!" });
       setEditDialogOpen(false);
+      resetImageState();
+      setGroups([]);
       setSelectedRace(null);
       const { data } = await supabase
         .from("races")
@@ -584,7 +702,7 @@ export default function Calendario() {
 
       {/* Add Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-racing text-xl">
               Adicionar Corrida
@@ -691,6 +809,110 @@ export default function Calendario() {
                 />
               </div>
             </div>
+            <MultiSelectDrivers
+              selectedIds={form.drivers}
+              onChange={(ids) => setForm({ ...form, drivers: ids })}
+              label="Pilotos a Participar"
+            />
+            {/* Driver groups */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Agrupamentos de Equipa <span className="text-xs text-muted-foreground">(opcional)</span></Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={() => setGroups([...groups, { name: `Equipa ${groups.length + 1}`, driverIds: [] }])}
+                >
+                  <Plus className="h-3 w-3" />
+                  Adicionar grupo
+                </Button>
+              </div>
+              {groups.map((group, gi) => {
+                const usedByOthers = groups.filter((_, i) => i !== gi).flatMap((g) => g.driverIds);
+                const available = form.drivers.filter((id) => !usedByOthers.includes(id));
+                return (
+                  <div key={gi} className="rounded-lg border border-border bg-secondary/30 p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={group.name}
+                        onChange={(e) => { const u = [...groups]; u[gi] = { ...group, name: e.target.value }; setGroups(u); }}
+                        className="bg-background h-8 text-sm font-racing"
+                        placeholder="Nome da equipa"
+                      />
+                      <button type="button" onClick={() => setGroups(groups.filter((_, i) => i !== gi))}
+                        className="rounded-full p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <MultiSelectDrivers
+                      selectedIds={group.driverIds}
+                      onChange={(ids) => { const u = [...groups]; u[gi] = { ...group, driverIds: ids }; setGroups(u); }}
+                      filterIds={[...available, ...group.driverIds]}
+                      label="Pilotos deste grupo"
+                    />
+                  </div>
+                );
+              })}
+              {groups.length > 0 && form.drivers.length === 0 && (
+                <p className="text-xs text-muted-foreground">Seleciona primeiro os pilotos a participar.</p>
+              )}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Weather image */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Cloud className="h-3.5 w-3.5 text-primary" />
+                  Previsão do Tempo <span className="text-xs text-muted-foreground">(opcional)</span>
+                </Label>
+                <input ref={weatherRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) { setWeatherFile(f); setWeatherPreview(URL.createObjectURL(f)); }
+                  }}
+                />
+                {weatherPreview ? (
+                  <div className="relative">
+                    <img src={weatherPreview} alt="Previsão do tempo" className="w-full rounded-lg object-cover max-h-36" />
+                    <button type="button" onClick={() => { setWeatherFile(null); setWeatherPreview(null); if (weatherRef.current) weatherRef.current.value = ""; }}
+                      className="absolute top-1 right-1 rounded-full bg-black/70 text-white p-1 hover:bg-black">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed" onClick={() => weatherRef.current?.click()}>
+                    <Upload className="h-3.5 w-3.5" /> Carregar imagem
+                  </Button>
+                )}
+              </div>
+              {/* Track map */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Map className="h-3.5 w-3.5 text-primary" />
+                  Mapa da Pista <span className="text-xs text-muted-foreground">(opcional)</span>
+                </Label>
+                <input ref={mapRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) { setMapFile(f); setMapPreview(URL.createObjectURL(f)); }
+                  }}
+                />
+                {mapPreview ? (
+                  <div className="relative">
+                    <img src={mapPreview} alt="Mapa da pista" className="w-full rounded-lg object-cover max-h-36" />
+                    <button type="button" onClick={() => { setMapFile(null); setMapPreview(null); if (mapRef.current) mapRef.current.value = ""; }}
+                      className="absolute top-1 right-1 rounded-full bg-black/70 text-white p-1 hover:bg-black">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed" onClick={() => mapRef.current?.click()}>
+                    <Upload className="h-3.5 w-3.5" /> Carregar imagem
+                  </Button>
+                )}
+              </div>
+            </div>
             <DialogFooter>
               <Button
                 type="button"
@@ -713,7 +935,7 @@ export default function Calendario() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-racing text-xl">
               Editar Corrida
@@ -816,6 +1038,110 @@ export default function Calendario() {
                   }
                   className="bg-secondary font-racing"
                 />
+              </div>
+            </div>
+            <MultiSelectDrivers
+              selectedIds={form.drivers}
+              onChange={(ids) => setForm({ ...form, drivers: ids })}
+              label="Pilotos a Participar"
+            />
+            {/* Driver groups */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Agrupamentos de Equipa <span className="text-xs text-muted-foreground">(opcional)</span></Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={() => setGroups([...groups, { name: `Equipa ${groups.length + 1}`, driverIds: [] }])}
+                >
+                  <Plus className="h-3 w-3" />
+                  Adicionar grupo
+                </Button>
+              </div>
+              {groups.map((group, gi) => {
+                const usedByOthers = groups.filter((_, i) => i !== gi).flatMap((g) => g.driverIds);
+                const available = form.drivers.filter((id) => !usedByOthers.includes(id));
+                return (
+                  <div key={gi} className="rounded-lg border border-border bg-secondary/30 p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={group.name}
+                        onChange={(e) => { const u = [...groups]; u[gi] = { ...group, name: e.target.value }; setGroups(u); }}
+                        className="bg-background h-8 text-sm font-racing"
+                        placeholder="Nome da equipa"
+                      />
+                      <button type="button" onClick={() => setGroups(groups.filter((_, i) => i !== gi))}
+                        className="rounded-full p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <MultiSelectDrivers
+                      selectedIds={group.driverIds}
+                      onChange={(ids) => { const u = [...groups]; u[gi] = { ...group, driverIds: ids }; setGroups(u); }}
+                      filterIds={[...available, ...group.driverIds]}
+                      label="Pilotos deste grupo"
+                    />
+                  </div>
+                );
+              })}
+              {groups.length > 0 && form.drivers.length === 0 && (
+                <p className="text-xs text-muted-foreground">Seleciona primeiro os pilotos a participar.</p>
+              )}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Weather image */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Cloud className="h-3.5 w-3.5 text-primary" />
+                  Previsão do Tempo <span className="text-xs text-muted-foreground">(opcional)</span>
+                </Label>
+                <input ref={weatherRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) { setWeatherFile(f); setWeatherPreview(URL.createObjectURL(f)); }
+                  }}
+                />
+                {weatherPreview ? (
+                  <div className="relative">
+                    <img src={weatherPreview} alt="Previsão do tempo" className="w-full rounded-lg object-cover max-h-36" />
+                    <button type="button" onClick={() => { setWeatherFile(null); setWeatherPreview(null); if (weatherRef.current) weatherRef.current.value = ""; }}
+                      className="absolute top-1 right-1 rounded-full bg-black/70 text-white p-1 hover:bg-black">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed" onClick={() => weatherRef.current?.click()}>
+                    <Upload className="h-3.5 w-3.5" /> Carregar imagem
+                  </Button>
+                )}
+              </div>
+              {/* Track map */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Map className="h-3.5 w-3.5 text-primary" />
+                  Mapa da Pista <span className="text-xs text-muted-foreground">(opcional)</span>
+                </Label>
+                <input ref={mapRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) { setMapFile(f); setMapPreview(URL.createObjectURL(f)); }
+                  }}
+                />
+                {mapPreview ? (
+                  <div className="relative">
+                    <img src={mapPreview} alt="Mapa da pista" className="w-full rounded-lg object-cover max-h-36" />
+                    <button type="button" onClick={() => { setMapFile(null); setMapPreview(null); if (mapRef.current) mapRef.current.value = ""; }}
+                      className="absolute top-1 right-1 rounded-full bg-black/70 text-white p-1 hover:bg-black">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed" onClick={() => mapRef.current?.click()}>
+                    <Upload className="h-3.5 w-3.5" /> Carregar imagem
+                  </Button>
+                )}
               </div>
             </div>
             <DialogFooter>

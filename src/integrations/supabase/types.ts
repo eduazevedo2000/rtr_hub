@@ -137,6 +137,7 @@ export type Database = {
           tipo: Database["public"]["Enums"]["race_type"] | null
           drivers: string[] | null
           duration_hours: number | null
+          driver_groups: Json | null
         }
         Insert: {
           created_at?: string
@@ -154,6 +155,7 @@ export type Database = {
           tipo?: Database["public"]["Enums"]["race_type"] | null
           drivers?: string[] | null
           duration_hours?: number | null
+          driver_groups?: Json | null
         }
         Update: {
           created_at?: string
@@ -171,6 +173,7 @@ export type Database = {
           tipo?: Database["public"]["Enums"]["race_type"] | null
           drivers?: string[] | null
           duration_hours?: number | null
+          driver_groups?: Json | null
         }
         Relationships: []
       }
