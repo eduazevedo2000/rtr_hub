@@ -174,7 +174,7 @@ export default function Admin() {
       const { data, error } = await supabase
         .from("races")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("date", { ascending: false });
 
       if (!error && data) {
         setRaces(data);
@@ -924,11 +924,16 @@ export default function Admin() {
               <SelectContent>
                 {races.map((race) => (
                   <SelectItem key={race.id} value={race.id}>
-                    <div className="flex items-center gap-2">
-                      {race.is_active && (
-                        <span className="h-2 w-2 rounded-full bg-green-500" />
-                      )}
-                      {race.name} - {race.track}
+                    <div className="flex items-center justify-between gap-4 w-full">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {race.is_active && (
+                          <span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />
+                        )}
+                        <span className="truncate">{race.name} - {race.track}</span>
+                      </div>
+                      <span className="text-muted-foreground text-xs shrink-0">
+                        {new Date(race.date).toLocaleDateString('pt-PT')}
+                      </span>
                     </div>
                   </SelectItem>
                 ))}
