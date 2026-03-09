@@ -67,6 +67,10 @@ const Index = () => {
     return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
   }, [activeRace?.duration_hours]);
 
+  // Corrida usada para mostrar info de pista:
+  // se houver corrida ativa, usa essa; caso contrário, usa a próxima corrida
+  const trackInfoRaceId = activeRace?.id ?? nextRace?.id;
+
   useEffect(() => {
     const fetchActiveRace = async () => {
       // Primeiro tenta buscar uma corrida ativa
@@ -395,7 +399,7 @@ const Index = () => {
               driverIds={activeRace?.drivers}
               driverGroups={activeRace?.driver_groups as Record<string, string[]> | null}
             />
-            <TrackInfo raceId={activeRace?.id} />
+            <TrackInfo raceId={trackInfoRaceId} />
           </div>
         </div>
       </main>

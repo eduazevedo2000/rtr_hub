@@ -33,6 +33,7 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
   const mapInputRef = useRef<HTMLInputElement>(null);
 
   const fetchInfo = async () => {
+    debugger
     if (!raceId) {
       setLoading(false);
       return;
