@@ -78,7 +78,7 @@ export type Database = {
           category: string | null
           clip_url: string | null
           created_at: string
-          description: string
+          description: string | null
           driver: string | null
           event_type: Database["public"]["Enums"]["race_event_type"]
           id: string
@@ -90,7 +90,7 @@ export type Database = {
           category?: string | null
           clip_url?: string | null
           created_at?: string
-          description: string
+          description?: string | null
           driver?: string | null
           event_type?: Database["public"]["Enums"]["race_event_type"]
           id?: string
@@ -102,7 +102,7 @@ export type Database = {
           category?: string | null
           clip_url?: string | null
           created_at?: string
-          description?: string
+          description?: string | null
           driver?: string | null
           event_type?: Database["public"]["Enums"]["race_event_type"]
           id?: string
@@ -138,6 +138,7 @@ export type Database = {
           drivers: string[] | null
           duration_hours: number | null
           driver_groups: Json | null
+          replay_url: string | null
         }
         Insert: {
           created_at?: string
@@ -156,6 +157,7 @@ export type Database = {
           drivers?: string[] | null
           duration_hours?: number | null
           driver_groups?: Json | null
+          replay_url?: string | null
         }
         Update: {
           created_at?: string
@@ -174,6 +176,7 @@ export type Database = {
           drivers?: string[] | null
           duration_hours?: number | null
           driver_groups?: Json | null
+          replay_url?: string | null
         }
         Relationships: []
       }
@@ -300,6 +303,8 @@ export type Database = {
           track_map_id: string | null
           weather_description: string | null
           weather_image_id: string | null
+          temperature_chart_image_id: string | null
+          precip_chart_image_id: string | null
         }
         Insert: {
           created_at?: string
@@ -308,6 +313,8 @@ export type Database = {
           track_map_id?: string | null
           weather_description?: string | null
           weather_image_id?: string | null
+          temperature_chart_image_id?: string | null
+          precip_chart_image_id?: string | null
         }
         Update: {
           created_at?: string
@@ -316,6 +323,8 @@ export type Database = {
           track_map_id?: string | null
           weather_description?: string | null
           weather_image_id?: string | null
+          temperature_chart_image_id?: string | null
+          precip_chart_image_id?: string | null
         }
         Relationships: [
           {

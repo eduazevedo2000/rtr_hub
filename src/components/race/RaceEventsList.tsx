@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { RaceEventCard } from "./RaceEventCard";
@@ -38,6 +39,9 @@ interface RaceEventsListProps {
 export function RaceEventsList({ raceId }: RaceEventsListProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const isLivePage = location.pathname === "/" || location.pathname === "/live";
   const [events, setEvents] = useState<RaceEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -93,12 +97,21 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
     };
   }, [raceId]);
 
-  // Auto-select first category when categories change
+  // Auto-select category when categories change; on live page persist selection via URL
   useEffect(() => {
     if (categories.length > 0) {
-      setSelectedCategory(categories[0].name);
+      if (isLivePage) {
+        const fromUrl = searchParams.get("category");
+        const valid = categories.some((c) => c.name === fromUrl);
+        const toSet = valid && fromUrl ? fromUrl : categories[0].name;
+        setSelectedCategory(toSet);
+        setSearchParams({ category: toSet }, { replace: true });
+      } else {
+        setSelectedCategory(categories[0].name);
+      }
     }
-  }, [categories]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync from URL when categories load
+  }, [categories, isLivePage]);
 
   const getCategories = async () => {
     // If we have a raceId, get categories only from drivers in this race
@@ -320,7 +333,13 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
             </motion.span>
           </Button>
           {categories.length > 0 && (
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select
+              value={selectedCategory}
+              onValueChange={(value) => {
+                setSelectedCategory(value);
+                if (isLivePage) setSearchParams({ category: value }, { replace: true });
+              }}
+            >
               <SelectTrigger className="h-10 w-[140px] shrink-0 rounded-l-none border-l-0 text-xs">
                 <SelectValue placeholder="Categoria" />
               </SelectTrigger>

@@ -86,7 +86,33 @@ const Index = () => {
         return;
       }
 
-      // Se não houver corrida ativa, busca a próxima corrida futura
+      // Se não houver corrida ativa, verifica se existe uma corrida com data hoje e ativa-a
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const { data: todayRaces, error: todayError } = await supabase
+        .from("races")
+        .select("*")
+        .gte("date", startOfToday.toISOString())
+        .lt("date", startOfTomorrow.toISOString())
+        .order("date", { ascending: true })
+        .limit(1);
+
+      if (!todayError && todayRaces && todayRaces.length > 0) {
+        const raceToActivate = todayRaces[0];
+        await supabase.from("races").update({ is_active: false }).eq("is_active", true);
+        const { error: updateErr } = await supabase
+          .from("races")
+          .update({ is_active: true })
+          .eq("id", raceToActivate.id);
+        if (!updateErr) {
+          setActiveRace(raceToActivate);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Fallback: próxima corrida futura (countdown)
       const { data: nextRaceData, error: nextRaceError } = await supabase
         .from("races")
         .select("*")

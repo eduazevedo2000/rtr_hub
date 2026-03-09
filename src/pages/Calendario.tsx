@@ -14,6 +14,7 @@ import {
   Map,
   Upload,
   X,
+  Flag,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
@@ -120,6 +121,7 @@ export default function Calendario() {
     num_classes: "",
     weather: "",
     drivers: [] as string[],
+    replay_url: "",
   });
 
   // Group state for add/edit dialogs
@@ -263,6 +265,7 @@ export default function Calendario() {
       num_classes: "",
       weather: "",
       drivers: [],
+      replay_url: "",
     });
     resetImageState();
     setGroups([]);
@@ -280,6 +283,7 @@ export default function Calendario() {
       num_classes: race.num_classes?.toString() ?? "",
       weather: race.weather ?? "",
       drivers: (race.drivers ?? []) as string[],
+      replay_url: race.replay_url ?? "",
     });
     resetImageState();
     // Load existing driver groups
@@ -295,6 +299,29 @@ export default function Calendario() {
   const openDelete = (race: Race) => {
     setSelectedRace(race);
     setDeleteDialogOpen(true);
+  };
+
+  const handleSetLive = async (race: Race) => {
+    if (!race?.id) return;
+    setSubmitting(true);
+    await supabase.from("races").update({ is_active: false }).eq("is_active", true);
+    const { error } = await supabase
+      .from("races")
+      .update({ is_active: true })
+      .eq("id", race.id);
+    setSubmitting(false);
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error.message,
+      });
+    } else {
+      toast({ title: "Corrida em direto!", description: `${race.name} está agora na página Live.` });
+      setRaces((prev) =>
+        prev.map((r) => ({ ...r, is_active: r.id === race.id }))
+      );
+    }
   };
 
   const uploadRaceImage = async (raceId: string, file: File, type: "weather" | "map") => {
@@ -434,6 +461,7 @@ export default function Calendario() {
         driver_groups: groups.length > 0
           ? Object.fromEntries(groups.map((g) => [g.name, g.driverIds]))
           : null,
+        replay_url: form.replay_url?.trim() || null,
       })
       .eq("id", selectedRace.id);
 
@@ -677,8 +705,10 @@ export default function Calendario() {
                             index={0}
                             isUpcoming={new Date(race.date) >= new Date()}
                             isAdmin={!!user}
+                            isActive={race.is_active}
                             onEdit={() => openEdit(race)}
                             onDelete={() => openDelete(race)}
+                            onSetLive={() => handleSetLive(race)}
                           />
                         ))}
                       </div>
@@ -1045,6 +1075,17 @@ export default function Calendario() {
               onChange={(ids) => setForm({ ...form, drivers: ids })}
               label="Pilotos a Participar"
             />
+            <div className="space-y-2">
+              <Label htmlFor="edit-replay">Link do vídeo da corrida <span className="text-xs text-muted-foreground">(opcional, ex. YouTube)</span></Label>
+              <Input
+                id="edit-replay"
+                type="url"
+                placeholder="https://www.youtube.com/..."
+                value={form.replay_url}
+                onChange={(e) => setForm({ ...form, replay_url: e.target.value })}
+                className="bg-secondary font-racing"
+              />
+            </div>
             {/* Driver groups */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -1208,15 +1249,19 @@ function RaceCard({
   index,
   isUpcoming,
   isAdmin,
+  isActive,
   onEdit,
   onDelete,
+  onSetLive,
 }: {
   race: Race;
   index: number;
   isUpcoming: boolean;
   isAdmin: boolean;
+  isActive?: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  onSetLive?: () => void;
 }) {
   const { date, time } = formatDateTime(race.date);
 
@@ -1232,7 +1277,7 @@ function RaceCard({
         isUpcoming
           ? "hover:border-primary/50 border-l-4 border-l-primary"
           : "opacity-75 hover:opacity-90 border-l-4 border-l-muted"
-      }`}
+      } ${isActive ? "ring-2 ring-red-500/50" : ""}`}
     >
       <div className="p-6 flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex-1 min-w-0">
@@ -1242,6 +1287,11 @@ function RaceCard({
             <span className="text-muted-foreground/70">•</span>
             <Clock className="h-3.5 w-3.5 shrink-0" />
             <span className="font-racing uppercase tracking-wider">{time}</span>
+            {isActive && (
+              <span className="text-red-500 font-semibold uppercase tracking-wider ml-1">
+                Em direto
+              </span>
+            )}
           </div>
           <h3 className="font-racing text-lg font-bold mb-1 truncate">
             {race.name}
@@ -1257,6 +1307,18 @@ function RaceCard({
         </div>
         {isAdmin && (
           <div className="flex items-center gap-2 shrink-0">
+            {onSetLive && !isActive && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onSetLive}
+                className="h-10 w-10 rounded-full hover:bg-red-500/20 hover:text-red-500"
+                aria-label="Colocar em live"
+                title="Colocar em live"
+              >
+                <Flag className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

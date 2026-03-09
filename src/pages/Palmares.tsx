@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Trophy, Calendar, Loader2, Trash2 } from "lucide-react";
+import { Trophy, Calendar, Loader2, Trash2, PlayCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { RaceEventsList } from "@/components/race/RaceEventsList";
@@ -421,6 +421,18 @@ export default function Palmares() {
                                 </span>
                               )}
                             </div>
+                          )}
+                          {race.replay_url && (
+                            <a
+                              href={race.replay_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-sm font-racing uppercase tracking-wider"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <PlayCircle className="h-4 w-4" />
+                              Ver corrida
+                            </a>
                           )}
                         </div>
                       </motion.div>

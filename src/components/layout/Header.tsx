@@ -44,7 +44,7 @@ type NavItem = NavItemDirect | NavItemDropdown;
 
 // Navigation structure
 const navItems: NavItem[] = [
-  { type: "direct", path: "/", label: "Live", icon: Flag },
+  { type: "direct", path: "/live", label: "Live", icon: Flag },
   { type: "direct", path: "/calendario", label: "Calendário", icon: Calendar },
   {
     type: "dropdown",
@@ -91,7 +91,7 @@ export function Header() {
   // Direct Link Component
   const DirectNavLink = ({ item }: { item: NavItemDirect }) => {
     const isActive = location.pathname === item.path;
-    const isLive = item.path === "/";
+    const isLive = item.path === "/live";
     const Icon = item.icon;
 
     const colorClasses = isLive
@@ -201,7 +201,7 @@ export function Header() {
   const MobileMenuItem = ({ item }: { item: NavItem }) => {
     if (item.type === "direct") {
       const isActive = location.pathname === item.path;
-      const isLive = item.path === "/";
+      const isLive = item.path === "/live";
       const Icon = item.icon;
 
       const colorClasses = isLive

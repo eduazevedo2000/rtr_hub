@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { Cloud, Map, Loader2, Upload, X } from "lucide-react";
+import { Cloud, Map, Loader2, Upload, X, Thermometer, CloudRain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,8 @@ type ImageRow = Database["public"]["Tables"]["images"]["Row"];
 type TrackInfoType = TrackInfoRow & {
   weather_image?: ImageRow;
   track_map?: ImageRow;
+  temperature_chart_image?: ImageRow;
+  precip_chart_image?: ImageRow;
 };
 
 interface TrackInfoProps {
@@ -24,16 +26,17 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
   const { toast } = useToast();
   const [info, setInfo] = useState<TrackInfoType | null>(null);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState<"weather" | "map" | null>(null);
+  const [uploading, setUploading] = useState<"weather" | "map" | "tempChart" | "precipChart" | null>(null);
   const [expandedImage, setExpandedImage] = useState<{
     url: string;
     title: string;
   } | null>(null);
   const weatherInputRef = useRef<HTMLInputElement>(null);
   const mapInputRef = useRef<HTMLInputElement>(null);
+  const tempChartInputRef = useRef<HTMLInputElement>(null);
+  const precipChartInputRef = useRef<HTMLInputElement>(null);
 
   const fetchInfo = async () => {
-    debugger
     if (!raceId) {
       setLoading(false);
       return;
@@ -50,17 +53,16 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
       return;
     }
 
-    // Buscar as imagens separadamente
     const imageIds: string[] = [];
-    if (trackInfoData.weather_image_id) {
-      imageIds.push(trackInfoData.weather_image_id);
-    }
-    if (trackInfoData.track_map_id) {
-      imageIds.push(trackInfoData.track_map_id);
-    }
+    if (trackInfoData.weather_image_id) imageIds.push(trackInfoData.weather_image_id);
+    if (trackInfoData.track_map_id) imageIds.push(trackInfoData.track_map_id);
+    if (trackInfoData.temperature_chart_image_id) imageIds.push(trackInfoData.temperature_chart_image_id);
+    if (trackInfoData.precip_chart_image_id) imageIds.push(trackInfoData.precip_chart_image_id);
 
     let weatherImage: ImageRow | undefined;
     let trackMap: ImageRow | undefined;
+    let temperatureChartImage: ImageRow | undefined;
+    let precipChartImage: ImageRow | undefined;
 
     if (imageIds.length > 0) {
       const { data: imagesData } = await supabase
@@ -69,12 +71,10 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
         .in("id", imageIds);
 
       if (imagesData) {
-        weatherImage = imagesData.find(
-          (img) => img.id === trackInfoData.weather_image_id
-        );
-        trackMap = imagesData.find(
-          (img) => img.id === trackInfoData.track_map_id
-        );
+        weatherImage = imagesData.find((img) => img.id === trackInfoData.weather_image_id);
+        trackMap = imagesData.find((img) => img.id === trackInfoData.track_map_id);
+        temperatureChartImage = imagesData.find((img) => img.id === trackInfoData.temperature_chart_image_id);
+        precipChartImage = imagesData.find((img) => img.id === trackInfoData.precip_chart_image_id);
       }
     }
 
@@ -82,6 +82,8 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
       ...trackInfoData,
       weather_image: weatherImage,
       track_map: trackMap,
+      temperature_chart_image: temperatureChartImage,
+      precip_chart_image: precipChartImage,
     } as TrackInfoType);
 
     setLoading(false);
@@ -93,7 +95,7 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
 
   const handleUpload = async (
     file: File,
-    type: "weather" | "map"
+    type: "weather" | "map" | "tempChart" | "precipChart"
   ) => {
     if (!raceId) {
       toast({
@@ -107,13 +109,12 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
     setUploading(type);
 
     try {
-      const bucket = type === "weather" ? "track-weather" : "track-images";
+      const bucket = type === "map" ? "track-images" : "track-weather";
       const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${raceId}/${fileName}`;
 
-      // Upload para o Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(filePath, file, {
           cacheControl: "3600",
@@ -122,12 +123,27 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
 
       if (uploadError) throw uploadError;
 
-      // Obter URL pública
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from(bucket).getPublicUrl(filePath);
+      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(filePath);
 
-      // Criar entrada na tabela images
+      const descriptions: Record<typeof type, string> = {
+        weather: "Weather forecast",
+        map: "Track map",
+        tempChart: "Temperature chart",
+        precipChart: "Rain and clouds chart",
+      };
+      const categories: Record<typeof type, string> = {
+        weather: "weather",
+        map: "track-map",
+        tempChart: "temperature-chart",
+        precipChart: "precip-chart",
+      };
+      const updateFields: Record<typeof type, "weather_image_id" | "track_map_id" | "temperature_chart_image_id" | "precip_chart_image_id"> = {
+        weather: "weather_image_id",
+        map: "track_map_id",
+        tempChart: "temperature_chart_image_id",
+        precipChart: "precip_chart_image_id",
+      };
+
       const { data: imageData, error: imageError } = await supabase
         .from("images")
         .insert({
@@ -136,17 +152,15 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
           filename: file.name,
           mime_type: file.type,
           size_bytes: file.size,
-          description: type === "weather" ? "Weather forecast" : "Track map",
-          category: type === "weather" ? "weather" : "track-map",
+          description: descriptions[type],
+          category: categories[type],
         })
         .select()
         .single();
 
       if (imageError) throw imageError;
 
-      // Criar ou atualizar track_info
-      const updateField =
-        type === "weather" ? "weather_image_id" : "track_map_id";
+      const updateField = updateFields[type];
 
       const { data: existingInfo } = await supabase
         .from("track_info")
@@ -193,7 +207,7 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
 
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    type: "weather" | "map"
+    type: "weather" | "map" | "tempChart" | "precipChart"
   ) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -337,6 +351,100 @@ export function TrackInfo({ raceId }: TrackInfoProps) {
           </button>
         ) : (
           <p className="text-sm text-muted-foreground">Sem mapa disponível</p>
+        )}
+      </div>
+
+      {/* Temperature chart */}
+      <div className="card-racing p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Thermometer className="h-4 w-4 text-primary" />
+            <h3 className="font-racing text-sm uppercase tracking-wider">Temperaturas</h3>
+          </div>
+          {user && raceId && (
+            <Button
+              onClick={() => tempChartInputRef.current?.click()}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={uploading === "tempChart"}
+            >
+              {uploading === "tempChart" ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> A carregar...</>
+              ) : (
+                <><Upload className="h-3.5 w-3.5" /> {info?.temperature_chart_image?.url ? "Substituir" : "Carregar"}</>
+              )}
+            </Button>
+          )}
+          <input
+            ref={tempChartInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileChange(e, "tempChart")}
+          />
+        </div>
+        {info?.temperature_chart_image?.url ? (
+          <button
+            type="button"
+            onClick={() => setExpandedImage({ url: info.temperature_chart_image!.url, title: "Temperaturas" })}
+            className="w-full"
+          >
+            <img
+              src={info.temperature_chart_image.url}
+              alt="Gráfico de temperaturas"
+              className="w-full rounded-lg cursor-zoom-in transition-transform hover:scale-[1.01]"
+            />
+          </button>
+        ) : (
+          <p className="text-sm text-muted-foreground">Sem gráfico de temperaturas</p>
+        )}
+      </div>
+
+      {/* Rain and clouds chart */}
+      <div className="card-racing p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <CloudRain className="h-4 w-4 text-primary" />
+            <h3 className="font-racing text-sm uppercase tracking-wider">Chuva e Nuvens</h3>
+          </div>
+          {user && raceId && (
+            <Button
+              onClick={() => precipChartInputRef.current?.click()}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={uploading === "precipChart"}
+            >
+              {uploading === "precipChart" ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> A carregar...</>
+              ) : (
+                <><Upload className="h-3.5 w-3.5" /> {info?.precip_chart_image?.url ? "Substituir" : "Carregar"}</>
+              )}
+            </Button>
+          )}
+          <input
+            ref={precipChartInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileChange(e, "precipChart")}
+          />
+        </div>
+        {info?.precip_chart_image?.url ? (
+          <button
+            type="button"
+            onClick={() => setExpandedImage({ url: info.precip_chart_image!.url, title: "Chuva e Nuvens" })}
+            className="w-full"
+          >
+            <img
+              src={info.precip_chart_image.url}
+              alt="Gráfico de chuva e nuvens"
+              className="w-full rounded-lg cursor-zoom-in transition-transform hover:scale-[1.01]"
+            />
+          </button>
+        ) : (
+          <p className="text-sm text-muted-foreground">Sem gráfico de chuva e nuvens</p>
         )}
       </div>
 

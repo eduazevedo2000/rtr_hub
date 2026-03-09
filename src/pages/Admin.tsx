@@ -70,9 +70,10 @@ export default function Admin() {
   // Event form state
   const [eventForm, setEventForm] = useState(getInitialFormState);
   
-  // Position fields for finishing race (when category is GERAL, need 2 positions)
-  const [positionLMP2, setPositionLMP2] = useState("");
-  const [positionGT3PRO, setPositionGT3PRO] = useState("");
+  // Dynamic list of (category, position) for finishing race - allows multiple results per category (e.g. 2 LMP2 cars)
+  const [finishPositions, setFinishPositions] = useState<{ category: string; position: string }[]>([
+    { category: "", position: "" },
+  ]);
 
   const getCategories = async () => {
     const { data, error } = await supabase
@@ -357,7 +358,7 @@ export default function Admin() {
         .from("race_events")
         .update({
           lap: parseInt(eventForm.lap),
-          description: eventForm.description,
+          description: eventForm.description?.trim() || null,
           event_type: eventForm.event_type,
           position: eventForm.position ? eventForm.position.toUpperCase() : null,
           driver: eventForm.driver || null,
@@ -385,8 +386,7 @@ export default function Admin() {
           clip_url: "",
           category: "GERAL",
         });
-        setPositionLMP2("");
-        setPositionGT3PRO("");
+        setFinishPositions([{ category: "", position: "" }]);
 
         toast({ title: "Ocorrência atualizada!" });
       }
@@ -398,7 +398,7 @@ export default function Admin() {
       {
         race_id: selectedRace,
         lap: parseInt(eventForm.lap),
-        description: eventForm.description,
+        description: eventForm.description?.trim() || null,
         event_type: eventForm.event_type,
         position: eventForm.position ? eventForm.position.toUpperCase() : null,
         driver: eventForm.driver || null,
@@ -425,10 +425,10 @@ export default function Admin() {
           clip_url: "",
           category: "GERAL",
         });
-        
+        setFinishPositions([{ category: "", position: "" }]);
+
         // Reset position fields
-        setPositionLMP2("");
-        setPositionGT3PRO("");
+        setFinishPositions([{ category: "", position: "" }]);
         
         if (eventForm.event_type === "finish") {
           // Get race info for achievement
@@ -460,33 +460,14 @@ export default function Admin() {
                 description: achievementError.message,
               });
             } else if (achievementData) {
-              // Insert positions based on category
-              const positionsToInsert = [];
-              
-              if (eventForm.category === "GERAL") {
-                // Insert both LMP2 and GT3 PRO positions
-                if (positionLMP2) {
-                  positionsToInsert.push({
-                    achievement_id: achievementData.id,
-                    category: "LMP2",
-                    position_finished: positionLMP2.toUpperCase(),
-                  });
-                }
-                if (positionGT3PRO) {
-                  positionsToInsert.push({
-                    achievement_id: achievementData.id,
-                    category: "GT3 PRO",
-                    position_finished: positionGT3PRO.toUpperCase(),
-                  });
-                }
-              } else if (eventForm.category && eventForm.position) {
-                // Insert single position for selected category
-                positionsToInsert.push({
+              // Insert all finish positions (multiple per category allowed, e.g. 2 LMP2 cars)
+              const positionsToInsert = finishPositions
+                .filter((p) => p.category && p.position?.trim())
+                .map((p) => ({
                   achievement_id: achievementData.id,
-                  category: eventForm.category,
-                  position_finished: eventForm.position.toUpperCase(),
-                });
-              }
+                  category: p.category,
+                  position_finished: p.position.trim().toUpperCase(),
+                }));
 
               if (positionsToInsert.length > 0) {
                 const { error: positionsError } = await supabase
@@ -965,8 +946,7 @@ export default function Admin() {
                       clip_url: "",
                       category: "",
                     });
-                    setPositionLMP2("");
-                    setPositionGT3PRO("");
+                    setFinishPositions([{ category: "", position: "" }]);
                   }}
                 >
                   Cancelar Edição
@@ -1009,10 +989,8 @@ export default function Admin() {
                         category: newCategory,
                         driver: shouldClearDriver ? "" : eventForm.driver,
                       });
-                      // Clear position fields when category changes (if finishing race)
+                      // When finishing race, category change doesn't clear the dynamic list
                       if (eventForm.event_type === "finish") {
-                        setPositionLMP2("");
-                        setPositionGT3PRO("");
                         setEventForm((prev) => ({ ...prev, position: "" }));
                       }
                     }}
@@ -1035,10 +1013,9 @@ export default function Admin() {
                     value={eventForm.event_type}
                     onValueChange={(v) => {
                       setEventForm({ ...eventForm, event_type: v as RaceEventType });
-                      // Clear position fields when changing event type
+                      // Clear finish positions when changing event type
                       if (v !== "finish") {
-                        setPositionLMP2("");
-                        setPositionGT3PRO("");
+                        setFinishPositions([{ category: "", position: "" }]);
                       }
                     }}
                   >
@@ -1057,58 +1034,97 @@ export default function Admin() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
+                <Label htmlFor="description">Descrição (opcional)</Label>
                 <Textarea
                   id="description"
-                  placeholder="Ultrapassagem na T1 para P6"
+                  placeholder="Ultrapassagem na T1 para P6 (ou deixar vazio, ex: FCY)"
                   value={eventForm.description}
                   onChange={(e) =>
                     setEventForm({ ...eventForm, description: e.target.value })
                   }
-                  required
                   className="bg-secondary min-h-[100px]"
                 />
               </div>
 
-              {/* Position fields - only show when finishing race */}
+              {/* Position fields - only show when finishing race (multiple results per category allowed) */}
               {eventForm.event_type === "finish" ? (
-                eventForm.category === "GERAL" ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="positionLMP2">Posição Final - LMP2</Label>
-                      <Input
-                        id="positionLMP2"
-                        placeholder="1"
-                        value={positionLMP2}
-                        onChange={(e) => setPositionLMP2(e.target.value)}
-                        className="bg-secondary"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="positionGT3PRO">Posição Final - GT3 PRO</Label>
-                      <Input
-                        id="positionGT3PRO"
-                        placeholder="1"
-                        value={positionGT3PRO}
-                        onChange={(e) => setPositionGT3PRO(e.target.value)}
-                        className="bg-secondary"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label htmlFor="position">Posição Final - {eventForm.category}</Label>
-                    <Input
-                      id="position"
-                      placeholder="6"
-                      value={eventForm.position}
-                      onChange={(e) =>
-                        setEventForm({ ...eventForm, position: e.target.value })
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Resultados por categoria (ex.: LMP2 P1, LMP2 P5, GT3 P3)</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                      onClick={() =>
+                        setFinishPositions((prev) => [...prev, { category: "", position: "" }])
                       }
-                      className="bg-secondary"
-                    />
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Adicionar
+                    </Button>
                   </div>
-                )
+                  {finishPositions.map((row, idx) => (
+                    <div key={idx} className="flex flex-wrap items-end gap-2">
+                      <div className="space-y-1.5 min-w-[120px]">
+                        <Label className="text-xs">Categoria</Label>
+                        <Select
+                          value={row.category || "_"}
+                          onValueChange={(v) =>
+                            setFinishPositions((prev) =>
+                              prev.map((p, i) =>
+                                i === idx ? { ...p, category: v === "_" ? "" : v } : p
+                              )
+                            )
+                          }
+                        >
+                          <SelectTrigger className="bg-secondary h-9">
+                            <SelectValue placeholder="Categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_">—</SelectItem>
+                            {categories
+                              .filter((c) => c.name !== "GERAL")
+                              .map((c) => (
+                                <SelectItem key={c.id} value={c.name}>
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5 min-w-[80px]">
+                        <Label className="text-xs">Posição</Label>
+                        <Input
+                          placeholder="P1"
+                          value={row.position}
+                          onChange={(e) =>
+                            setFinishPositions((prev) =>
+                              prev.map((p, i) =>
+                                i === idx ? { ...p, position: e.target.value } : p
+                              )
+                            )
+                          }
+                          className="bg-secondary h-9"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() =>
+                          setFinishPositions((prev) =>
+                            prev.length > 1 ? prev.filter((_, i) => i !== idx) : [{ category: "", position: "" }]
+                          )
+                        }
+                        aria-label="Remover"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
