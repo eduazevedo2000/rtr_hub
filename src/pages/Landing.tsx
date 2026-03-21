@@ -15,6 +15,7 @@ export default function Landing() {
   const { isAdmin } = useIsAdmin();
   const { toast } = useToast();
   const [landingImages, setLandingImages] = useState<ImageRow[]>([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,6 +34,19 @@ export default function Landing() {
   useEffect(() => {
     fetchLandingImages();
   }, []);
+
+  useEffect(() => {
+    if (landingImages.length <= 1) {
+      setCurrentSlide(0);
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % landingImages.length);
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, [landingImages]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,26 +104,38 @@ export default function Landing() {
       <Header />
 
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.12)_0%,_transparent_50%)]" />
-        <div className="container relative py-16 sm:py-24 md:py-32">
+      <section className="relative overflow-hidden border-b border-border h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)]">
+        {landingImages.length > 0 ? (
+          <div className="absolute inset-0">
+            {landingImages.map((img, index) => (
+              <img
+                key={img.id}
+                src={img.url}
+                alt={img.description ?? "Imagem da equipa"}
+                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+                  index === currentSlide ? "opacity-100" : "opacity-0"
+                }`}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.16)_0%,_transparent_60%)]" />
+        )}
+
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/8 via-black/15 to-black/25" />
+
+        <div className="container relative h-full flex items-start justify-center pt-24 sm:pt-28 md:pt-32">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-center max-w-3xl mx-auto"
+            className="text-center max-w-3xl mx-auto px-4"
           >
-            <div className="flex justify-center mb-6">
-              <img
-                src="/images/rtr_logo.png"
-                alt="Ric Team Racing"
-                className="h-20 sm:h-24 md:h-28 w-auto object-contain opacity-95"
-              />
-            </div>
-            <h1 className="font-racing text-3xl sm:text-4xl md:text-6xl font-bold mb-4 tracking-tight">
+            <h1 className="font-racing text-3xl sm:text-4xl md:text-6xl font-bold mb-4 tracking-tight text-white">
               Ric Team Racing
             </h1>
-            <p className="text-muted-foreground text-lg sm:text-xl mb-10">
+            <p className="text-white/80 text-lg sm:text-xl mb-10">
               Sim racing de resistência. Acompanha as nossas corridas e conquistas.
             </p>
             <motion.div
@@ -136,143 +162,22 @@ export default function Landing() {
               </Link>
             </motion.div>
           </motion.div>
-        </div>
-      </section>
 
-      {/* Photos / highlights section */}
-      <section className="container py-16">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10">
-          <motion.h2
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="font-racing text-2xl sm:text-3xl font-bold text-center sm:text-left"
-          >
-            A equipa em ação
-          </motion.h2>
-          {isAdmin && (
-            <div className="flex justify-center sm:justify-end">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleUpload}
-              />
-              <Button
-                variant="outline"
-                className="gap-2 font-racing uppercase tracking-wider"
-                disabled={uploading}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" />
-                )}
-                Adicionar imagem
-              </Button>
-            </div>
-          )}
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-4xl mx-auto">
-          {loading ? (
-            <div className="col-span-full flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : landingImages.length > 0 ? (
-            landingImages.map((img, i) => (
-              <motion.div
-                key={img.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.06 }}
-                className="card-racing overflow-hidden aspect-[4/3] relative group"
-              >
-                <img
-                  src={img.url}
-                  alt={img.description ?? "Equipa em ação"}
-                  className="w-full h-full object-cover"
+          {landingImages.length > 1 && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2">
+              {landingImages.map((img, index) => (
+                <button
+                  key={`slide-${img.id}`}
+                  type="button"
+                  onClick={() => setCurrentSlide(index)}
+                  className={`h-2 w-8 rounded-full transition-colors ${
+                    index === currentSlide ? "bg-white" : "bg-white/40 hover:bg-white/60"
+                  }`}
+                  aria-label={`Ir para slide ${index + 1}`}
                 />
-                {isAdmin && (
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleDelete(img.id, img.storage_path)}
-                    aria-label="Remover imagem"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </motion.div>
-            ))
-          ) : (
-            [1, 2, 3].map((i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08 }}
-                className="card-racing overflow-hidden aspect-[4/3] flex items-center justify-center bg-secondary/50 border-dashed"
-              >
-                <div className="text-center p-6">
-                  <Trophy className="h-12 w-12 mx-auto mb-2 text-muted-foreground/60" />
-                  <p className="text-sm text-muted-foreground font-racing uppercase tracking-wider">
-                    Foto {i}
-                  </p>
-                  {isAdmin && (
-                    <p className="text-xs text-muted-foreground/80 mt-1">
-                      Usa o botão acima para adicionar imagens
-                    </p>
-                  )}
-                </div>
-              </motion.div>
-            ))
+              ))}
+            </div>
           )}
-        </div>
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="flex flex-wrap justify-center gap-4 mt-12"
-        >
-          <Link to="/palmares">
-            <Button variant="ghost" className="gap-2 font-racing uppercase tracking-wider">
-              <Trophy className="h-4 w-4" />
-              Palmarés
-            </Button>
-          </Link>
-          <Link to="/pilotos">
-            <Button variant="ghost" className="gap-2 font-racing uppercase tracking-wider">
-              <Users className="h-4 w-4" />
-              Pilotos
-            </Button>
-          </Link>
-        </motion.div>
-      </section>
-
-      {/* CTA strip */}
-      <section className="border-t border-border bg-secondary/30">
-        <div className="container py-10">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="flex flex-col sm:flex-row items-center justify-between gap-6"
-          >
-            <p className="font-racing text-lg uppercase tracking-wider text-center sm:text-left">
-              Próxima corrida? Entra em direto.
-            </p>
-            <Link to="/live">
-              <Button className="bg-red-600 hover:bg-red-700 font-racing uppercase tracking-wider gap-2">
-                <Flag className="h-4 w-4" />
-                Ir para Live
-              </Button>
-            </Link>
-          </motion.div>
         </div>
       </section>
     </div>

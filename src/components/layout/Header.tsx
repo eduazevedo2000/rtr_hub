@@ -281,13 +281,11 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container relative flex h-16 items-center justify-between py-1 sm:h-20 md:min-h-24">
-        {/* Logo */}
+        {/* Brand */}
         <Link to="/" className="flex shrink-0 items-center">
-          <img
-            src="/images/rtr_logo.png"
-            alt="RTR Logo"
-            className="h-14 w-auto object-contain sm:h-20 md:h-24"
-          />
+          <span className="font-racing text-base sm:text-lg md:text-xl uppercase tracking-wider text-foreground">
+            Ric Team Racing
+          </span>
         </Link>
 
         {/* Desktop Navigation */}

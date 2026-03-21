@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Trophy, Calendar, Loader2, Trash2, PlayCircle } from "lucide-react";
+import { Trophy, Calendar, Loader2, Trash2, PlayCircle, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { RaceEventsList } from "@/components/race/RaceEventsList";
@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import type { Database } from "@/integrations/supabase/types";
 
 type Race = Database["public"]["Tables"]["races"]["Row"];
@@ -31,6 +32,7 @@ type Category = Database["public"]["Tables"]["categories"]["Row"];
 
 export default function Palmares() {
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const { toast } = useToast();
   const [races, setRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,22 +98,39 @@ export default function Palmares() {
     // Build positions map from achievements data
     if (achievementsData) {
       const positionsMap: Record<string, AchievementPosition[]> = {};
-      
+
       for (const achievement of achievementsData) {
-        if (achievement.race_id && achievement.achievement_positions) {
-          // achievement_positions is an array due to the relationship
-          const positions = Array.isArray(achievement.achievement_positions) 
-            ? achievement.achievement_positions 
-            : [achievement.achievement_positions];
-          
-          if (positions.length > 0) {
-            positionsMap[achievement.race_id] = positions.sort((a, b) => 
-              a.category.localeCompare(b.category)
-            ) as AchievementPosition[];
-          }
-        }
+        if (!achievement.race_id || !achievement.achievement_positions) continue;
+
+        // achievement_positions may come as a single object or array.
+        const positions = Array.isArray(achievement.achievement_positions)
+          ? achievement.achievement_positions
+          : [achievement.achievement_positions];
+
+        if (positions.length === 0) continue;
+
+        const existingPositions = positionsMap[achievement.race_id] ?? [];
+        positionsMap[achievement.race_id] = [
+          ...existingPositions,
+          ...(positions as AchievementPosition[]),
+        ];
       }
-      
+
+      // Sort and de-duplicate by category+position in case backend returns overlaps.
+      for (const raceId of Object.keys(positionsMap)) {
+        const uniqueByCategoryAndPosition = new Map<string, AchievementPosition>();
+        for (const position of positionsMap[raceId]) {
+          uniqueByCategoryAndPosition.set(
+            `${position.category}::${position.position_finished}`,
+            position
+          );
+        }
+
+        positionsMap[raceId] = Array.from(uniqueByCategoryAndPosition.values()).sort(
+          (a, b) => a.category.localeCompare(b.category)
+        );
+      }
+
       setRacePositions(positionsMap);
     }
     
@@ -180,6 +199,52 @@ export default function Palmares() {
 
     setDeleteDialogOpen(false);
     setRaceToDelete(null);
+  };
+
+  const handleSetLiveLink = async (race: Race, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!race.id) return;
+
+    const currentValue = race.replay_url ?? "";
+    const nextValue = window
+      .prompt("Link da live (YouTube/Twitch). Deixa vazio para remover.", currentValue)
+      ?.trim();
+
+    if (nextValue === undefined || nextValue === currentValue) return;
+
+    if (nextValue && !/^https?:\/\//i.test(nextValue)) {
+      toast({
+        title: "Link inválido",
+        description: "O link deve começar por http:// ou https://",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("races")
+      .update({ replay_url: nextValue || null })
+      .eq("id", race.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao guardar link",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setRaces((prev) =>
+      prev.map((item) =>
+        item.id === race.id ? { ...item, replay_url: nextValue || null } : item
+      )
+    );
+
+    toast({
+      title: nextValue ? "Link da live atualizado!" : "Link da live removido!",
+    });
   };
 
   type TimelineItem =
@@ -309,17 +374,31 @@ export default function Palmares() {
                         }}
                         whileHover={{ x: 4 }}
                       >
-                        {user && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-2 right-2 z-20 h-8 w-8 rounded-full opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-                            onClick={(e) => openDelete(race, e)}
-                            aria-label={`Apagar: ${race.name}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        {user && isAdmin && (
+                          <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary"
+                              onClick={(e) => handleSetLiveLink(race, e)}
+                              aria-label={`Editar link da live: ${race.name}`}
+                              title="Editar link da live"
+                            >
+                              <Link2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                              onClick={(e) => openDelete(race, e)}
+                              aria-label={`Apagar: ${race.name}`}
+                              title="Apagar corrida"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         )}
                         {(() => {
                           const positions = race.id ? racePositions[race.id] : [];
