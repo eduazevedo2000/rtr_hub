@@ -19,7 +19,7 @@ const contactLinks = [
 
 export default function Contacts() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="page-shell">
       <Header />
 
       {/* Hero */}

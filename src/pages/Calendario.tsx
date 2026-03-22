@@ -514,7 +514,7 @@ export default function Calendario() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="page-shell">
       <Header />
 
       {/* Hero */}

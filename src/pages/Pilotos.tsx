@@ -288,7 +288,7 @@ export default function Pilotos() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="page-shell">
       <Header />
 
       {/* Hero */}

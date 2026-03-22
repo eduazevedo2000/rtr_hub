@@ -4,7 +4,7 @@ import { Header } from "@/components/layout/Header";
 
 export default function AboutUs() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="page-shell">
       <Header />
 
       {/* Hero */}

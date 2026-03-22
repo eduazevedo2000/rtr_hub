@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Flag, ChevronRight, Trophy, Calendar, Users, Upload, Loader2, Trash2 } from "lucide-react";
+import { Flag, ChevronRight, Calendar, Upload, Loader2, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -100,7 +100,7 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="page-shell">
       <Header />
 
       {/* Hero */}
@@ -124,6 +124,35 @@ export default function Landing() {
 
         <div className="absolute inset-0 bg-black/20" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/8 via-black/15 to-black/25" />
+
+        {isAdmin && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleUpload}
+            />
+            <div className="absolute right-4 top-4 z-30 sm:right-6 sm:top-6">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="gap-2 font-racing uppercase tracking-wider shadow-md"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+                Adicionar foto
+              </Button>
+            </div>
+          </>
+        )}
 
         <div className="container relative h-full flex items-start justify-center pt-24 sm:pt-28 md:pt-32">
           <motion.div
@@ -180,6 +209,68 @@ export default function Landing() {
           )}
         </div>
       </section>
+
+      {/* Admin: gerir fotos do slideshow */}
+      {isAdmin && (
+        <section className="border-t border-border bg-secondary/40 py-6">
+          <div className="container">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="font-racing text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                Fotos da página inicial (slideshow)
+              </h2>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-fit gap-2 font-racing uppercase tracking-wider"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+                Adicionar outra foto
+              </Button>
+            </div>
+            {loading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : landingImages.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Ainda não há imagens. Usa &quot;Adicionar foto&quot; acima para preencher o slideshow.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {landingImages.map((img) => (
+                  <div
+                    key={img.id}
+                    className="group relative aspect-video w-36 overflow-hidden rounded-lg border border-border bg-background sm:w-44"
+                  >
+                    <img
+                      src={img.url}
+                      alt={img.description ?? ""}
+                      className="h-full w-full object-cover"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute right-1 top-1 h-8 w-8 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                      onClick={() => handleDelete(img.id, img.storage_path)}
+                      aria-label="Remover imagem"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

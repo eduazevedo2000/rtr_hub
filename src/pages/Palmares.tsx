@@ -266,7 +266,7 @@ export default function Palmares() {
   }, [races]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="page-shell">
       <Header />
 
       {/* Hero */}

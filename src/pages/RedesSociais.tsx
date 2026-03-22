@@ -128,7 +128,7 @@ const sections = [
 
 export default function RedesSociais() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="page-shell">
       <Header />
 
       {/* Hero */}

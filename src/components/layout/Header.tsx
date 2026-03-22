@@ -279,7 +279,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 border-b border-border bg-[hsl(220_22%_8%/0.55)] backdrop-blur-md supports-[backdrop-filter]:bg-[hsl(220_22%_8%/0.48)]">
       <div className="container relative flex h-16 items-center justify-between py-1 sm:h-20 md:min-h-24">
         {/* Brand */}
         <Link to="/" className="flex shrink-0 items-center">
@@ -352,7 +352,7 @@ export function Header() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="md:hidden overflow-hidden border-t border-border bg-background"
+            className="md:hidden overflow-hidden border-t border-border bg-[hsl(220_22%_8%/0.82)] backdrop-blur-md"
           >
             <div className="container py-4 space-y-1">
               {navItems.map((item, index) => (

@@ -617,7 +617,7 @@ export default function Classificacao() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="page-shell">
       <Header />
 
       {/* Hero Section */}

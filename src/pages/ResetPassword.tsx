@@ -123,7 +123,7 @@ export default function ResetPassword() {
 
   if (validToken === null) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="page-shell flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -131,7 +131,7 @@ export default function ResetPassword() {
 
   if (validToken === false) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="page-shell flex items-center justify-center p-4">
         <div className="text-center">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10 mb-4">
             <Lock className="h-8 w-8 text-destructive" />
@@ -145,7 +145,7 @@ export default function ResetPassword() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="page-shell flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(4_90%_58%_/_0.1)_0%,_transparent_50%)]" />
         
         <motion.div
@@ -165,7 +165,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="page-shell flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(4_90%_58%_/_0.1)_0%,_transparent_50%)]" />
       
       <motion.div
