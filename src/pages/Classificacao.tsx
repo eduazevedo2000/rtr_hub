@@ -97,6 +97,9 @@ const COUNTRY_CODE_ALIASES: Record<string, string> = {
   USA: "US",
 };
 
+const isRicTeamRacing = (teamName: string) =>
+  teamName.trim().toLowerCase() === "ric team racing";
+
 const renderFlag = (countryCode?: string | null) => {
   const normalized = countryCode?.trim().toUpperCase();
   if (!normalized) {
@@ -469,8 +472,6 @@ export default function Classificacao() {
 
     setParsingPdf(true);
 
-    debugger
-
     try {
       const result = await parsePdfToStandings(file);
       
@@ -735,16 +736,20 @@ export default function Classificacao() {
                 </thead>
                 <tbody>
                   <AnimatePresence mode="popLayout">
-                    {standings.map((standing, index) => (
+                    {standings.map((standing, index) => {
+                      const homeTeam = isRicTeamRacing(standing.team_name);
+                      return (
                       <motion.tr
                         key={standing.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ delay: index * 0.05 }}
-                        className={`border-b border-border hover:bg-accent/50 group ${
-                          user ? "cursor-pointer" : ""
-                        }`}
+                        className={`border-b border-border group ${
+                          homeTeam
+                            ? "relative bg-accent/50 border-l-2 border-l-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.12)] hover:from-primary/16 hover:via-primary/10"
+                            : "hover:bg-accent/50"
+                        } ${user ? "cursor-pointer" : ""}`}
                         onClick={() => {
                           if (user) openEdit(standing);
                         }}
@@ -830,7 +835,8 @@ export default function Classificacao() {
                           </td>
                         )}
                       </motion.tr>
-                    ))}
+                    );
+                    })}
                   </AnimatePresence>
                 </tbody>
               </table>
@@ -1135,10 +1141,16 @@ export default function Classificacao() {
                         </tr>
                       </thead>
                       <tbody>
-                        {parsedData.map((standing, index) => (
+                        {parsedData.map((standing, rowIndex) => {
+                          const homeTeamPreview = isRicTeamRacing(standing.team_name);
+                          return (
                           <tr
-                            key={index}
-                            className="border-b hover:bg-muted/50 text-sm"
+                            key={rowIndex}
+                            className={`border-b text-sm ${
+                              homeTeamPreview
+                                ? "bg-primary/10 border-l-2 border-l-primary hover:bg-primary/15"
+                                : "hover:bg-muted/50"
+                            }`}
                           >
                             <td className="py-2 px-4">{standing.rank}</td>
                             <td className="py-2 px-4">
@@ -1169,7 +1181,8 @@ export default function Classificacao() {
                               {standing.top10}
                             </td>
                           </tr>
-                        ))}
+                        );
+                        })}
                       </tbody>
                     </table>
                   </div>
