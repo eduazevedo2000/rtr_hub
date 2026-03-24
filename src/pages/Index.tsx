@@ -344,7 +344,7 @@ const Index = () => {
               transition={{ delay: 0.1 * 0 }}
               className="text-center"
             >
-              <Car className="h-5 w-5 mx-auto mb-2 text-primary" />
+              <Car className="h-7 w-7 mx-auto mb-2 text-primary" />
               <p className="font-racing text-2xl font-bold">{activeRace?.num_cars ?? "—"}</p>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Carros</p>
             </motion.div>
@@ -354,7 +354,7 @@ const Index = () => {
               transition={{ delay: 0.1 * 1 }}
               className="text-center"
             >
-              <Layers className="h-5 w-5 mx-auto mb-2 text-primary" />
+              <Layers className="h-7 w-7 mx-auto mb-2 text-primary" />
               <p className="font-racing text-2xl font-bold">{activeRace?.num_classes ?? "—"}</p>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">
                 {activeRace?.num_classes === 1 ? "Classe" : "Classes"}
@@ -366,7 +366,7 @@ const Index = () => {
               transition={{ delay: 0.1 * 2 }}
               className="text-center"
             >
-              <Clock className="h-5 w-5 mx-auto mb-2 text-primary" />
+              <Clock className="h-7 w-7 mx-auto mb-2 text-primary" />
               <p className="font-racing text-2xl font-bold">
                 {formattedDuration}
               </p>
@@ -386,10 +386,10 @@ const Index = () => {
                       : activeRace.weather === "chuva"
                         ? CloudRain
                         : Cloud;
-                  return <WeatherIcon className="h-5 w-5 mx-auto mb-2 text-primary" />;
+                  return <WeatherIcon className="h-7 w-7 mx-auto mb-2 text-primary" />;
                 })()
               ) : (
-                <Cloud className="h-5 w-5 mx-auto mb-2 text-primary" />
+                <Cloud className="h-7 w-7 mx-auto mb-2 text-primary" />
               )}
               {activeRace?.weather ? (
                 <p className="font-racing text-2xl font-bold capitalize">
