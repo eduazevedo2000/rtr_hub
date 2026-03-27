@@ -500,22 +500,8 @@ export default function Admin() {
               description: updateError.message,
             });
           } else {
-            // Ativar a próxima corrida (por data)
-            if (finishedRace?.date) {
-              const { data: nextRaces } = await supabase
-                .from("races")
-                .select("id")
-                .gt("date", finishedRace.date)
-                .order("date", { ascending: true })
-                .limit(1);
-
-              if (nextRaces && nextRaces.length > 0) {
-                await supabase
-                  .from("races")
-                  .update({ is_active: true })
-                  .eq("id", nextRaces[0].id);
-              }
-            }
+            // Nota: não ativamos automaticamente a próxima corrida.
+            // A corrida só deve ficar "live" quando chegar o dia (tratado na página Live).
             toast({ title: "Corrida finalizada!" });
           }
         }

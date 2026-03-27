@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Flag, ChevronRight, Calendar, Upload, Loader2, Trash2 } from "lucide-react";
+import { Flag, ChevronRight, Upload, Loader2, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -11,6 +11,10 @@ import type { Database } from "@/integrations/supabase/types";
 
 type ImageRow = Database["public"]["Tables"]["images"]["Row"];
 
+/** Embed do YouTube Shorts para evitar ficheiro local pesado no git */
+const FLOATING_HERO_IFRAME_SRC =
+  "https://www.youtube.com/embed/OMyW3hntPxs?autoplay=1&mute=1&loop=1&playlist=OMyW3hntPxs&controls=1&rel=0&modestbranding=1&playsinline=1";
+
 export default function Landing() {
   const { isAdmin } = useIsAdmin();
   const { toast } = useToast();
@@ -18,6 +22,7 @@ export default function Landing() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [showSoundHint, setShowSoundHint] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchLandingImages = async () => {
@@ -47,6 +52,33 @@ export default function Landing() {
 
     return () => window.clearInterval(timer);
   }, [landingImages]);
+
+  useEffect(() => {
+    let isMounted = true;
+    let showTimeout: number | undefined;
+    let hideTimeout: number | undefined;
+
+    const runLoop = () => {
+      if (!isMounted) return;
+      setShowSoundHint(true);
+
+      hideTimeout = window.setTimeout(() => {
+        if (!isMounted) return;
+        setShowSoundHint(false);
+
+        // Espera antes de mostrar novamente para evitar "pisca-duplo".
+        showTimeout = window.setTimeout(runLoop, 2800);
+      }, 4200);
+    };
+
+    runLoop();
+
+    return () => {
+      isMounted = false;
+      if (showTimeout) window.clearTimeout(showTimeout);
+      if (hideTimeout) window.clearTimeout(hideTimeout);
+    };
+  }, []);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -122,8 +154,34 @@ export default function Landing() {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.16)_0%,_transparent_60%)]" />
         )}
 
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/8 via-black/15 to-black/25" />
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/8 via-black/15 to-black/25"></div>
+
+        {/* Vídeo 9:16 flutuante à esquerda, centrado na altura da hero (desktop) */}
+        <motion.div
+          className="pointer-events-none absolute left-4 top-[calc(50%-36vh)] z-20 hidden -translate-y-1/2 md:block lg:left-8"
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+          aria-hidden
+        >
+          <div
+            className="pointer-events-auto overflow-hidden rounded-xl border border-white/25 bg-black/50 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.65)] ring-1 ring-white/10 backdrop-blur-sm"
+            style={{
+              aspectRatio: "9 / 16",
+              height: "min(72vh, 760px)",
+              width: "auto",
+            }}
+          >
+            <iframe
+              src={FLOATING_HERO_IFRAME_SRC}
+              title="Evento Sebring - YouTube Shorts"
+              className="h-full w-full border-0"
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+            />
+          </div>
+        </motion.div>
 
         {isAdmin && (
           <>
@@ -155,42 +213,50 @@ export default function Landing() {
         )}
 
         <div className="container relative h-full flex items-start justify-center pt-24 sm:pt-28 md:pt-32">
+          <div className="flex flex-col items-center justify-center gap-16">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="text-center max-w-3xl mx-auto px-4"
           >
-            <h1 className="font-racing text-3xl sm:text-4xl md:text-6xl font-bold mb-4 tracking-tight text-white">
-              Ric Team Racing
-            </h1>
-            <p className="text-white/80 text-lg sm:text-xl mb-10">
-              Sim racing de resistência. Acompanha as nossas corridas e conquistas.
-            </p>
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
-            >
-              <Link to="/live">
-                <Button
-                  size="lg"
-                  className="font-racing text-base uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white gap-2 px-8"
-                >
-                  <Flag className="h-5 w-5" />
-                  Ver corrida em direto
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link to="/calendario">
-                <Button variant="outline" size="lg" className="font-racing uppercase tracking-wider gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Calendário
-                </Button>
-              </Link>
-            </motion.div>
+            <div className="inline-block w-full max-w-2xl rounded-2xl border border-white/20 bg-black/45 px-5 py-6 shadow-[0_20px_45px_-18px_rgba(0,0,0,0.75)] backdrop-blur-sm sm:px-8 sm:py-8">
+              <h1 className="font-racing text-3xl sm:text-4xl md:text-6xl font-bold mb-4 tracking-tight text-white">
+                EVENTO ESPECIAL
+              </h1>
+              <p className="text-white/85 text-lg sm:text-xl mb-10">
+                27 e 28 de Março
+                <br />
+                Powered by PC COMPONENTES.
+              </p>
+              
+            </div>
           </motion.div>
+
+          <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                className="flex flex-col sm:flex-row items-center justify-center gap-4"
+              >
+                <Link to="/live">
+                  <Button
+                    size="lg"
+                    className="font-racing text-base uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white gap-2 px-8"
+                  >
+                    <Flag className="h-5 w-5" />
+                    Ver corrida em direto
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                {/* <Link to="/calendario">
+                  <Button variant="outline" size="lg" className="font-racing uppercase tracking-wider gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Calendário
+                  </Button>
+                </Link> */}
+              </motion.div>
+            </div>
 
           {landingImages.length > 1 && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2">

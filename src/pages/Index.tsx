@@ -100,15 +100,27 @@ const Index = () => {
 
       if (!todayError && todayRaces && todayRaces.length > 0) {
         const raceToActivate = todayRaces[0];
-        await supabase.from("races").update({ is_active: false }).eq("is_active", true);
-        const { error: updateErr } = await supabase
-          .from("races")
-          .update({ is_active: true })
-          .eq("id", raceToActivate.id);
-        if (!updateErr) {
-          setActiveRace(raceToActivate);
-          setLoading(false);
-          return;
+        // Se já existe um evento "finish" para a corrida de hoje, não reativar live.
+        const { data: finishEvents, error: finishError } = await supabase
+          .from("race_events")
+          .select("id")
+          .eq("race_id", raceToActivate.id)
+          .eq("event_type", "finish")
+          .limit(1);
+
+        const hasFinishEvent = !finishError && !!finishEvents && finishEvents.length > 0;
+
+        if (!hasFinishEvent) {
+          await supabase.from("races").update({ is_active: false }).eq("is_active", true);
+          const { error: updateErr } = await supabase
+            .from("races")
+            .update({ is_active: true })
+            .eq("id", raceToActivate.id);
+          if (!updateErr) {
+            setActiveRace(raceToActivate);
+            setLoading(false);
+            return;
+          }
         }
       }
 
