@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Flag, ChevronRight, Upload, Loader2, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
@@ -15,6 +15,10 @@ type ImageRow = Database["public"]["Tables"]["images"]["Row"];
 const FLOATING_HERO_IFRAME_SRC =
   "https://www.youtube.com/embed/OMyW3hntPxs?autoplay=1&mute=1&loop=1&playlist=OMyW3hntPxs&controls=1&rel=0&modestbranding=1&playsinline=1";
 
+/** Hino da equipa — https://www.youtube.com/watch?v=xcFs9jls1z8 */
+const TEAM_ANTHEM_IFRAME_SRC =
+  "https://www.youtube.com/embed/xcFs9jls1z8?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1";
+
 export default function Landing() {
   const { isAdmin } = useIsAdmin();
   const { toast } = useToast();
@@ -22,7 +26,6 @@ export default function Landing() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [showSoundHint, setShowSoundHint] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchLandingImages = async () => {
@@ -52,33 +55,6 @@ export default function Landing() {
 
     return () => window.clearInterval(timer);
   }, [landingImages]);
-
-  useEffect(() => {
-    let isMounted = true;
-    let showTimeout: number | undefined;
-    let hideTimeout: number | undefined;
-
-    const runLoop = () => {
-      if (!isMounted) return;
-      setShowSoundHint(true);
-
-      hideTimeout = window.setTimeout(() => {
-        if (!isMounted) return;
-        setShowSoundHint(false);
-
-        // Espera antes de mostrar novamente para evitar "pisca-duplo".
-        showTimeout = window.setTimeout(runLoop, 2800);
-      }, 4200);
-    };
-
-    runLoop();
-
-    return () => {
-      isMounted = false;
-      if (showTimeout) window.clearTimeout(showTimeout);
-      if (hideTimeout) window.clearTimeout(hideTimeout);
-    };
-  }, []);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -134,6 +110,45 @@ export default function Landing() {
   return (
     <div className="page-shell">
       <Header />
+
+      {/* Hino da equipa — altura = viewport menos header (igual à hero); fundo = mesmas imagens */}
+      <section className="relative flex min-h-0 flex-col overflow-hidden border-b border-border h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)]">
+        {landingImages.length > 0 ? (
+          <div className="absolute inset-0">
+            {landingImages.map((img, index) => (
+              <img
+                key={`anthem-bg-${img.id}`}
+                src={img.url}
+                alt=""
+                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+                  index === currentSlide ? "opacity-100" : "opacity-0"
+                }`}
+                aria-hidden
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.16)_0%,_transparent_60%)] bg-secondary/30" />
+        )}
+
+        <div className="absolute inset-0 bg-black/45" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/35 to-black/45" />
+
+        <div className="container relative flex w-full flex-1 flex-col  py-8 sm:py-10">
+          <h2 className="font-racing mb-4 text-center text-lg font-bold uppercase tracking-wider text-white sm:text-xl">
+            Hino da equipa
+          </h2>
+          <div className="card-racing mx-auto w-4/5 overflow-hidden aspect-video shadow-2xl">
+            <iframe
+              src={TEAM_ANTHEM_IFRAME_SRC}
+              title="Hino da equipa — Ric Team Racing"
+              className="block h-full w-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      </section>
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)]">
