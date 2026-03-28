@@ -535,7 +535,16 @@ export default function Palmares() {
                     {races.find((r) => r.id === selectedRaceId)?.name || "Eventos da Corrida"}
                   </DialogTitle>
                 </DialogHeader>
-                {selectedRaceId && <RaceEventsList raceId={selectedRaceId} />}
+                {selectedRaceId && (
+                  <RaceEventsList
+                    raceId={selectedRaceId}
+                    driverGroups={
+                      (races.find((r) => r.id === selectedRaceId)?.driver_groups as
+                        | Record<string, string[]>
+                        | null) ?? null
+                    }
+                  />
+                )}
               </DialogContent>
             </Dialog>
           </>

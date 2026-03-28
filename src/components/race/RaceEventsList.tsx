@@ -34,20 +34,35 @@ type RaceEventType = Database["public"]["Enums"]["race_event_type"];
 
 interface RaceEventsListProps {
   raceId?: string;
+  /** Quando definido (ex.: Equipa 1 / Equipa 2), o filtro do feed é por equipa em vez de categoria iRacing. */
+  driverGroups?: Record<string, string[]> | null;
 }
 
-export function RaceEventsList({ raceId }: RaceEventsListProps) {
+export function RaceEventsList({ raceId, driverGroups }: RaceEventsListProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const isLivePage = location.pathname === "/" || location.pathname === "/live";
+
+  const teamNames = useMemo(() => {
+    if (!driverGroups || typeof driverGroups !== "object") return [];
+    return Object.keys(driverGroups);
+  }, [driverGroups]);
+  const teamMode = teamNames.length > 0;
+  const driverGroupsKey = useMemo(() => JSON.stringify(driverGroups ?? null), [driverGroups]);
+
   const [events, setEvents] = useState<RaceEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedTeam, setSelectedTeam] = useState<string>("");
+  const resolvedTeam = useMemo(() => {
+    if (!teamMode || teamNames.length === 0) return "";
+    return teamNames.includes(selectedTeam) ? selectedTeam : teamNames[0];
+  }, [teamMode, teamNames, selectedTeam]);
   const [spin, setSpin] = useState(0);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<RaceEvent | null>(null);
@@ -97,8 +112,9 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
     };
   }, [raceId]);
 
-  // Auto-select category when categories change; on live page persist selection via URL
+  // Auto-select category when categories change; on live page persist selection via URL (sem agrupamentos por equipa)
   useEffect(() => {
+    if (teamMode) return;
     if (categories.length > 0) {
       if (isLivePage) {
         const fromUrl = searchParams.get("category");
@@ -111,7 +127,30 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync from URL when categories load
-  }, [categories, isLivePage]);
+  }, [categories, isLivePage, teamMode]);
+
+  // Com agrupamentos: filtro por equipa; na live persiste ?team=
+  useEffect(() => {
+    if (!teamMode || teamNames.length === 0) return;
+    if (isLivePage) {
+      const fromUrl = searchParams.get("team");
+      const valid = fromUrl && teamNames.includes(fromUrl);
+      const toSet = valid && fromUrl ? fromUrl : teamNames[0];
+      setSelectedTeam(toSet);
+      setSearchParams(
+        (prev) => {
+          const p = new URLSearchParams(prev);
+          p.delete("category");
+          p.set("team", toSet);
+          return p;
+        },
+        { replace: true }
+      );
+    } else {
+      setSelectedTeam((prev) => (teamNames.includes(prev) ? prev : teamNames[0]));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- sync when equipas change / first load
+  }, [teamMode, driverGroupsKey, isLivePage]);
 
   const getCategories = async () => {
     // If we have a raceId, get categories only from drivers in this race
@@ -278,12 +317,43 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
     return drivers.filter((driver) => driver.category === editForm.category);
   }, [drivers, editForm.category]);
 
-  // Filter events by selected category + GERAL category
+  // Nomes de piloto da equipa selecionada (event.driver guarda o nome)
+  const selectedTeamDriverNames = useMemo(() => {
+    if (!teamMode || !resolvedTeam || !driverGroups) return new Set<string>();
+    const ids = driverGroups[resolvedTeam] ?? [];
+    const names = new Set<string>();
+    for (const id of ids) {
+      const d = drivers.find((dr) => dr.id === id);
+      if (d) {
+        names.add(d.name);
+        if (d.known_as) names.add(d.known_as);
+      }
+    }
+    return names;
+  }, [teamMode, resolvedTeam, driverGroups, drivers]);
+
+  // Por equipa: GERAL + ocorrências cujo piloto pertence à equipa. Senão: categoria + GERAL.
   const filteredEvents = useMemo(() => {
-    return events.filter((event) => 
-      event.category === selectedCategory || event.category === "GERAL"
+    if (teamMode && resolvedTeam) {
+      return events.filter((event) => {
+        if (event.category === "GERAL") return true;
+        if (event.driver && selectedTeamDriverNames.has(event.driver)) return true;
+        return false;
+      });
+    }
+    return events.filter(
+      (event) =>
+        event.category === selectedCategory || event.category === "GERAL"
     );
-  }, [events, selectedCategory]);
+  }, [
+    events,
+    teamMode,
+    resolvedTeam,
+    selectedCategory,
+    selectedTeamDriverNames,
+  ]);
+
+  const showFilterSelect = teamMode ? teamNames.length > 0 : categories.length > 0;
 
   if (loading) {
     return (
@@ -322,7 +392,7 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
               fetchEvents();
               setSpin((s) => s + 360);
             }}
-            className={`h-10 w-10 shrink-0 ${categories.length > 0 ? "rounded-r-none border-r-0" : ""}`}
+            className={`h-10 w-10 shrink-0 ${showFilterSelect ? "rounded-r-none border-r-0" : ""}`}
           >
             <motion.span
               animate={{ rotate: spin }}
@@ -332,7 +402,40 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
               <RefreshCcw className="h-4 w-4" />
             </motion.span>
           </Button>
-          {categories.length > 0 && (
+          {showFilterSelect && teamMode && (
+            <Select
+              value={resolvedTeam}
+              onValueChange={(value) => {
+                setSelectedTeam(value);
+                if (isLivePage) {
+                  setSearchParams(
+                    (prev) => {
+                      const p = new URLSearchParams(prev);
+                      p.delete("category");
+                      p.set("team", value);
+                      return p;
+                    },
+                    { replace: true }
+                  );
+                }
+              }}
+            >
+              <SelectTrigger
+                aria-label="Filtrar por equipa"
+                className="h-10 min-w-[11rem] max-w-[min(18rem,55vw)] shrink-0 rounded-l-none border-l-0 border-border bg-card/80 pl-3 pr-2 font-racing text-xs uppercase tracking-wider text-foreground shadow-none transition-colors hover:bg-card focus:ring-2 focus:ring-primary/50 focus:ring-offset-0 focus:ring-offset-background data-[state=open]:border-primary/40"
+              >
+                <SelectValue placeholder="Equipa" />
+              </SelectTrigger>
+              <SelectContent className="font-racing text-xs uppercase tracking-wider">
+                {teamNames.map((name) => (
+                  <SelectItem key={name} value={name} className="focus:bg-primary/15 focus:text-foreground">
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {showFilterSelect && !teamMode && (
             <Select
               value={selectedCategory}
               onValueChange={(value) => {
@@ -340,12 +443,15 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
                 if (isLivePage) setSearchParams({ category: value }, { replace: true });
               }}
             >
-              <SelectTrigger className="h-10 w-[140px] shrink-0 rounded-l-none border-l-0 text-xs">
+              <SelectTrigger
+                aria-label="Filtrar por categoria"
+                className="h-10 w-[140px] shrink-0 rounded-l-none border-l-0 border-border bg-card/80 pl-3 pr-2 font-racing text-xs uppercase tracking-wider text-foreground shadow-none transition-colors hover:bg-card focus:ring-2 focus:ring-primary/50 focus:ring-offset-0 focus:ring-offset-background data-[state=open]:border-primary/40"
+              >
                 <SelectValue placeholder="Categoria" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="font-racing text-xs uppercase tracking-wider">
                 {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.name}>
+                  <SelectItem key={category.id} value={category.name} className="focus:bg-primary/15 focus:text-foreground">
                     {category.name}
                   </SelectItem>
                 ))}
@@ -359,7 +465,9 @@ export function RaceEventsList({ raceId }: RaceEventsListProps) {
           <Radio className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="font-racing text-lg mb-2">Sem ocorrências</h3>
           <p className="text-sm text-muted-foreground">
-            Não há eventos para a categoria selecionada.
+            {teamMode
+              ? "Não há eventos para a equipa selecionada."
+              : "Não há eventos para a categoria selecionada."}
           </p>
         </div>
       ) : (

@@ -427,7 +427,12 @@ const Index = () => {
                 Race Highlights
               </h2>
             </div>
-            <RaceEventsList raceId={activeRace?.id} />
+            <RaceEventsList
+              raceId={activeRace?.id}
+              driverGroups={
+                (activeRace?.driver_groups as Record<string, string[]> | null) ?? null
+              }
+            />
           </div>
 
           {/* Sidebar */}
