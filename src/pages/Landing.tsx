@@ -56,6 +56,12 @@ export default function Landing() {
     return () => window.clearInterval(timer);
   }, [landingImages]);
 
+  const activeImage = landingImages[currentSlide];
+  const nextImage =
+    landingImages.length > 1
+      ? landingImages[(currentSlide + 1) % landingImages.length]
+      : null;
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith("image/")) {
@@ -68,7 +74,7 @@ export default function Landing() {
       const path = `${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("landing")
-        .upload(path, file, { cacheControl: "3600", upsert: false });
+        .upload(path, file, { cacheControl: "31536000", upsert: false });
 
       if (uploadError) throw uploadError;
 
@@ -113,23 +119,7 @@ export default function Landing() {
 
       {/* Hino da equipa — altura = viewport menos header (igual à hero); fundo = mesmas imagens */}
       <section className="relative flex min-h-0 flex-col overflow-hidden border-b border-border h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)]">
-        {landingImages.length > 0 ? (
-          <div className="absolute inset-0">
-            {landingImages.map((img, index) => (
-              <img
-                key={`anthem-bg-${img.id}`}
-                src={img.url}
-                alt=""
-                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
-                  index === currentSlide ? "opacity-100" : "opacity-0"
-                }`}
-                aria-hidden
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.16)_0%,_transparent_60%)] bg-secondary/30" />
-        )}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.16)_0%,_transparent_60%)] bg-secondary/30" />
 
         <div className="absolute inset-0 bg-black/45" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/35 to-black/45" />
@@ -152,15 +142,17 @@ export default function Landing() {
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)]">
-        {landingImages.length > 0 ? (
+        {activeImage ? (
           <div className="absolute inset-0">
-            {landingImages.map((img, index) => (
+            {[activeImage, nextImage].filter(Boolean).map((img, index) => (
               <img
-                key={img.id}
-                src={img.url}
-                alt={img.description ?? "Imagem da equipa"}
+                key={img!.id}
+                src={img!.url}
+                alt={img!.description ?? "Imagem da equipa"}
+                loading={index === 0 ? "eager" : "lazy"}
+                decoding="async"
                 className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
-                  index === currentSlide ? "opacity-100" : "opacity-0"
+                  index === 0 ? "opacity-100" : "opacity-0"
                 }`}
               />
             ))}

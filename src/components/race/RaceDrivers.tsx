@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Loader2, ChevronDown, ChevronUp } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { useDriversCache } from "@/hooks/useDriversCache";
 import {
   Dialog,
   DialogContent,
@@ -82,32 +82,13 @@ function DriverCard({ driver, onClick, compact = false }: { driver: Driver; onCl
 }
 
 export function RaceDrivers({ driverIds, driverGroups }: RaceDriversProps) {
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { drivers: cachedDrivers, loading: cacheLoading } = useDriversCache();
   const [expanded, setExpanded] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
-
-  useEffect(() => {
-    const fetchDrivers = async () => {
-      if (!driverIds || driverIds.length === 0) {
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("drivers")
-        .select("*")
-        .in("id", driverIds)
-        .order("name", { ascending: true });
-
-      if (!error && data) {
-        setDrivers(data);
-      }
-      setLoading(false);
-    };
-
-    fetchDrivers();
-  }, [driverIds]);
+  const drivers = driverIds
+    ? cachedDrivers.filter((driver) => driverIds.includes(driver.id))
+    : [];
+  const loading = cacheLoading;
 
   if (loading) {
     return (

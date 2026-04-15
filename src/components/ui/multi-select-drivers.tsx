@@ -1,11 +1,7 @@
-import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Database } from "@/integrations/supabase/types";
-
-type Driver = Database["public"]["Tables"]["drivers"]["Row"];
+import { useDriversCache } from "@/hooks/useDriversCache";
 
 interface MultiSelectDriversProps {
   selectedIds: string[];
@@ -16,24 +12,7 @@ interface MultiSelectDriversProps {
 }
 
 export function MultiSelectDrivers({ selectedIds, onChange, label = "Pilotos", filterIds }: MultiSelectDriversProps) {
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchDrivers = async () => {
-      const { data, error } = await supabase
-        .from("drivers")
-        .select("*")
-        .order("name", { ascending: true });
-
-      if (!error && data) {
-        setDrivers(data);
-      }
-      setLoading(false);
-    };
-
-    fetchDrivers();
-  }, []);
+  const { drivers, loading } = useDriversCache();
 
   const toggleDriver = (driverId: string) => {
     if (selectedIds.includes(driverId)) {

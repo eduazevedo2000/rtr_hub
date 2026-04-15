@@ -84,14 +84,19 @@ export function RaceEventsList({ raceId, driverGroups }: RaceEventsListProps) {
     loadData();
 
     // Set up realtime subscription
+    if (!raceId) {
+      return;
+    }
+
     const channel = supabase
-      .channel("race_events_changes")
+      .channel(`race_events_changes:${raceId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "race_events",
+          filter: `race_id=eq.${raceId}`,
         },
         (payload) => {
           if (payload.eventType === "INSERT") {

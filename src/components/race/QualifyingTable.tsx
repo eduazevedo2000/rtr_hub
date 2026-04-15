@@ -31,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
+import { useDriversCache } from "@/hooks/useDriversCache";
 
 type QualifyingResultRow = Database["public"]["Tables"]["qualifying_results"]["Row"];
 type DriverRow = Database["public"]["Tables"]["drivers"]["Row"];
@@ -49,7 +50,7 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
   const { toast } = useToast();
   const [results, setResults] = useState<QualifyingResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [drivers, setDrivers] = useState<DriverRow[]>([]);
+  const { drivers } = useDriversCache();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingResult, setEditingResult] = useState<QualifyingResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -81,46 +82,22 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
       return;
     }
 
-    // Buscar os drivers separadamente
     const driverIds = [...new Set(resultsData.map(r => r.driver_id))].filter(Boolean);
-    
-    if (driverIds.length > 0) {
-      const { data: driversData } = await supabase
-        .from("drivers")
-        .select("*")
-        .in("id", driverIds);
 
-      // Fazer o join no código
-      const resultsWithDrivers = resultsData.map(result => {
-        const driver = driversData?.find(d => d.id === result.driver_id);
-        return {
-          ...result,
-          driver: driver || undefined,
-        } as QualifyingResult;
-      });
+    const driversMap = new Map(drivers.map((driver) => [driver.id, driver]));
+    const resultsWithDrivers = resultsData.map((result) => ({
+      ...result,
+      driver: driverIds.length > 0 ? driversMap.get(result.driver_id) : undefined,
+    })) as QualifyingResult[];
 
-      setResults(resultsWithDrivers);
-    } else {
-      setResults(resultsData as QualifyingResult[]);
-    }
+    setResults(resultsWithDrivers);
     
     setLoading(false);
   };
 
   useEffect(() => {
     fetchResults();
-  }, [raceId]);
-
-  useEffect(() => {
-    const fetchDrivers = async () => {
-      const { data } = await supabase
-        .from("drivers")
-        .select("*")
-        .order("name", { ascending: true });
-      if (data) setDrivers(data);
-    };
-    fetchDrivers();
-  }, []);
+  }, [raceId, drivers]);
 
   const openAdd = () => {
     setEditingResult(null);

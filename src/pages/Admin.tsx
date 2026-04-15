@@ -41,6 +41,7 @@ export default function Admin() {
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const hydratedEditEventRef = useRef(false);
 
   // Initialize form state - check location.state for edit event
   const getInitialFormState = () => {
@@ -179,36 +180,6 @@ export default function Admin() {
 
       if (!error && data) {
         setRaces(data);
-        
-        // Check if we're editing an event from location state
-        const editEvent = (location.state as any)?.editEvent;
-        if (editEvent) {
-          setEditingEventId(editEvent.id);
-          setSelectedRace(editEvent.race_id);
-          // Only update form if values are different to avoid unnecessary re-renders
-          setEventForm((prev) => {
-            if (prev.category === editEvent.category && 
-                prev.lap === editEvent.lap &&
-                prev.description === editEvent.description) {
-              return prev; // No change needed
-            }
-            return {
-              lap: editEvent.lap,
-              description: editEvent.description,
-              event_type: editEvent.event_type,
-              position: editEvent.position || "",
-              driver: editEvent.driver || "",
-              clip_url: editEvent.clip_url || "",
-              category: editEvent.category || "GERAL",
-            };
-          });
-          // Clear the state to avoid re-applying on re-render
-          window.history.replaceState({}, document.title);
-        } else {
-          // Only set active race if not editing
-          const active = data.find((r) => r.is_active);
-          if (active && !selectedRace) setSelectedRace(active.id);
-        }
       }
       setLoading(false);
       getCategories();
@@ -217,7 +188,33 @@ export default function Admin() {
     };
 
     if (user && isAdmin && !adminLoading) fetchRaces();
-  }, [user, isAdmin, adminLoading, location.state]);
+  }, [user, isAdmin, adminLoading]);
+
+  useEffect(() => {
+    if (hydratedEditEventRef.current) return;
+    const editEvent = (location.state as any)?.editEvent;
+    if (editEvent) {
+      hydratedEditEventRef.current = true;
+      setEditingEventId(editEvent.id);
+      setSelectedRace(editEvent.race_id);
+      setEventForm({
+        lap: editEvent.lap,
+        description: editEvent.description,
+        event_type: editEvent.event_type,
+        position: editEvent.position || "",
+        driver: editEvent.driver || "",
+        clip_url: editEvent.clip_url || "",
+        category: editEvent.category || "GERAL",
+      });
+      window.history.replaceState({}, document.title);
+      return;
+    }
+
+    if (races.length > 0 && !selectedRace) {
+      const active = races.find((race) => race.is_active);
+      if (active) setSelectedRace(active.id);
+    }
+  }, [location.state, races, selectedRace]);
 
   const handleCreateRace = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -283,7 +280,7 @@ export default function Admin() {
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file, { cacheControl: "3600", upsert: false });
+        .upload(filePath, file, { cacheControl: "31536000", upsert: false });
 
       if (uploadError) throw uploadError;
 

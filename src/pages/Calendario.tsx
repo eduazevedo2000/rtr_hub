@@ -332,7 +332,7 @@ export default function Calendario() {
 
     const { error: uploadError } = await supabase.storage
       .from(bucket)
-      .upload(filePath, file, { cacheControl: "3600", upsert: false });
+      .upload(filePath, file, { cacheControl: "31536000", upsert: false });
     if (uploadError) throw uploadError;
 
     const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(filePath);
