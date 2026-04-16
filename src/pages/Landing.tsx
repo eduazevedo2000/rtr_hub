@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Flag, ChevronRight, Upload, Loader2, Trash2 } from "lucide-react";
+import { Flag, ChevronRight, Upload, Loader2, Trash2, Calendar } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -10,10 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 type ImageRow = Database["public"]["Tables"]["images"]["Row"];
-
-/** Embed do YouTube Shorts para evitar ficheiro local pesado no git */
-const FLOATING_HERO_IFRAME_SRC =
-  "https://www.youtube.com/embed/OMyW3hntPxs?autoplay=1&mute=1&loop=1&playlist=OMyW3hntPxs&controls=1&rel=0&modestbranding=1&playsinline=1";
 
 /** Hino da equipa — https://www.youtube.com/watch?v=xcFs9jls1z8 */
 const TEAM_ANTHEM_IFRAME_SRC =
@@ -114,21 +110,83 @@ export default function Landing() {
   };
 
   return (
-    <div className="page-shell">
+    <div className="page-shell relative">
       <Header />
 
-      {/* Hino da equipa — altura = viewport menos header (igual à hero); fundo = mesmas imagens */}
-      <section className="relative flex min-h-0 flex-col overflow-hidden border-b border-border h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)]">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.16)_0%,_transparent_60%)] bg-secondary/30" />
+      {activeImage ? (
+        <div className="pointer-events-none fixed inset-0 z-0">
+          {[activeImage, nextImage].filter(Boolean).map((img, index) => (
+            <img
+              key={`page-bg-${img!.id}`}
+              src={img!.url}
+              alt={img!.description ?? "Imagem da equipa"}
+              loading={index === 0 ? "eager" : "lazy"}
+              decoding="async"
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+                index === 0 ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.16)_0%,_transparent_60%)] bg-secondary/30" />
+      )}
+      <div className="pointer-events-none fixed inset-0 z-0 bg-black/30" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-gradient-to-b from-black/20 via-black/25 to-black/35" />
 
-        <div className="absolute inset-0 bg-black/45" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/35 to-black/45" />
+      <div className="relative z-10">
+        {/* Chamada principal: corrida em direto */}
+        <section className="relative overflow-hidden border-b border-border h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)]">
 
-        <div className="container relative flex w-full flex-1 flex-col  py-8 sm:py-10">
+        <div className="container relative h-full flex items-start justify-center pt-24 sm:pt-28 md:pt-32">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center max-w-3xl mx-auto px-4"
+          >
+            <h1 className="font-racing text-3xl sm:text-4xl md:text-6xl font-bold mb-4 tracking-tight text-white">
+              Ric Team Racing
+            </h1>
+            <p className="text-white/80 text-lg sm:text-xl mb-10">
+              Sim racing de resistência. Acompanha as nossas corridas e conquistas.
+            </p>
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            >
+              <Link to="/live">
+                <Button
+                  size="lg"
+                  className="font-racing text-base uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white gap-2 px-8"
+                >
+                  <Flag className="h-5 w-5" />
+                  Ver corrida em direto
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link to="/calendario">
+                <Button variant="outline" size="lg" className="font-racing uppercase tracking-wider gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Calendário
+                </Button>
+              </Link>
+            </motion.div>
+          </motion.div>
+
+        </div>
+        </section>
+
+        {/* Hero com slideshow e vídeo */}
+        <section className="relative overflow-hidden border-b border-border h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)]">
+
+        <div className="container relative flex w-full h-full flex-1 flex-col items-center justify-center py-8 sm:py-10">
           <h2 className="font-racing mb-4 text-center text-lg font-bold uppercase tracking-wider text-white sm:text-xl">
             Hino da equipa
           </h2>
-          <div className="card-racing mx-auto w-4/5 overflow-hidden aspect-video shadow-2xl">
+          <div className="card-racing mx-auto aspect-video w-4/5 overflow-hidden shadow-2xl">
             <iframe
               src={TEAM_ANTHEM_IFRAME_SRC}
               title="Hino da equipa — Ric Team Racing"
@@ -138,57 +196,6 @@ export default function Landing() {
             />
           </div>
         </div>
-      </section>
-
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-border h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)]">
-        {activeImage ? (
-          <div className="absolute inset-0">
-            {[activeImage, nextImage].filter(Boolean).map((img, index) => (
-              <img
-                key={img!.id}
-                src={img!.url}
-                alt={img!.description ?? "Imagem da equipa"}
-                loading={index === 0 ? "eager" : "lazy"}
-                decoding="async"
-                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
-                  index === 0 ? "opacity-100" : "opacity-0"
-                }`}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.16)_0%,_transparent_60%)]" />
-        )}
-
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/8 via-black/15 to-black/25"></div>
-
-        {/* Vídeo 9:16 flutuante à esquerda, centrado na altura da hero (desktop) */}
-        <motion.div
-          className="pointer-events-none absolute left-4 top-[calc(50%-36vh)] z-20 hidden -translate-y-1/2 md:block lg:left-8"
-          initial={{ opacity: 0, x: -12 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-          aria-hidden
-        >
-          <div
-            className="pointer-events-auto overflow-hidden rounded-xl border border-white/25 bg-black/50 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.65)] ring-1 ring-white/10 backdrop-blur-sm"
-            style={{
-              aspectRatio: "9 / 16",
-              height: "min(72vh, 760px)",
-              width: "auto",
-            }}
-          >
-            <iframe
-              src={FLOATING_HERO_IFRAME_SRC}
-              title="Evento Sebring - YouTube Shorts"
-              className="h-full w-full border-0"
-              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-              allowFullScreen
-            />
-          </div>
-        </motion.div>
 
         {isAdmin && (
           <>
@@ -219,52 +226,7 @@ export default function Landing() {
           </>
         )}
 
-        <div className="container relative h-full flex items-start justify-center pt-24 sm:pt-28 md:pt-32">
-          <div className="flex flex-col items-center justify-center gap-16">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center max-w-3xl mx-auto px-4"
-          >
-            <div className="inline-block w-full max-w-2xl rounded-2xl border border-white/20 bg-black/45 px-5 py-6 shadow-[0_20px_45px_-18px_rgba(0,0,0,0.75)] backdrop-blur-sm sm:px-8 sm:py-8">
-              <h1 className="font-racing text-3xl sm:text-4xl md:text-6xl font-bold mb-4 tracking-tight text-white">
-                EVENTO ESPECIAL
-              </h1>
-              <p className="text-white/85 text-lg sm:text-xl mb-10">
-                27 e 28 de Março
-                <br />
-                Powered by PC COMPONENTES.
-              </p>
-              
-            </div>
-          </motion.div>
-
-          <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.4 }}
-                className="flex flex-col sm:flex-row items-center justify-center gap-4"
-              >
-                <Link to="/live">
-                  <Button
-                    size="lg"
-                    className="font-racing text-base uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white gap-2 px-8"
-                  >
-                    <Flag className="h-5 w-5" />
-                    Ver corrida em direto
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-                {/* <Link to="/calendario">
-                  <Button variant="outline" size="lg" className="font-racing uppercase tracking-wider gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Calendário
-                  </Button>
-                </Link> */}
-              </motion.div>
-            </div>
-
+        <div className="container relative h-full">
           {landingImages.length > 1 && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2">
               {landingImages.map((img, index) => (
@@ -281,69 +243,70 @@ export default function Landing() {
             </div>
           )}
         </div>
-      </section>
-
-      {/* Admin: gerir fotos do slideshow */}
-      {isAdmin && (
-        <section className="border-t border-border bg-secondary/40 py-6">
-          <div className="container">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="font-racing text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                Fotos da página inicial (slideshow)
-              </h2>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-fit gap-2 font-racing uppercase tracking-wider"
-                disabled={uploading}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" />
-                )}
-                Adicionar outra foto
-              </Button>
-            </div>
-            {loading ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : landingImages.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Ainda não há imagens. Usa &quot;Adicionar foto&quot; acima para preencher o slideshow.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-3">
-                {landingImages.map((img) => (
-                  <div
-                    key={img.id}
-                    className="group relative aspect-video w-36 overflow-hidden rounded-lg border border-border bg-background sm:w-44"
-                  >
-                    <img
-                      src={img.url}
-                      alt={img.description ?? ""}
-                      className="h-full w-full object-cover"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute right-1 top-1 h-8 w-8 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
-                      onClick={() => handleDelete(img.id, img.storage_path)}
-                      aria-label="Remover imagem"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </section>
-      )}
+
+        {/* Admin: gerir fotos do slideshow */}
+        {isAdmin && (
+          <section className="border-t border-border bg-secondary/40 py-6">
+            <div className="container">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="font-racing text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  Fotos da página inicial (slideshow)
+                </h2>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-fit gap-2 font-racing uppercase tracking-wider"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  Adicionar outra foto
+                </Button>
+              </div>
+              {loading ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : landingImages.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Ainda não há imagens. Usa &quot;Adicionar foto&quot; acima para preencher o slideshow.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  {landingImages.map((img) => (
+                    <div
+                      key={img.id}
+                      className="group relative aspect-video w-36 overflow-hidden rounded-lg border border-border bg-background sm:w-44"
+                    >
+                      <img
+                        src={img.url}
+                        alt={img.description ?? ""}
+                        className="h-full w-full object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute right-1 top-1 h-8 w-8 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                        onClick={() => handleDelete(img.id, img.storage_path)}
+                        aria-label="Remover imagem"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

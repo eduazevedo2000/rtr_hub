@@ -11,16 +11,17 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 type ImageRow = Database["public"]["Tables"]["images"]["Row"];
-type LocalVideoOption = { filename: string; url: string };
+type OptimizedVideoOption = { filename: string; url: string };
 
-const LOCAL_LANDING_VIDEOS: LocalVideoOption[] = [
+/** Embeds otimizados para evitar ficheiros de vídeo pesados no repositório */
+const OPTIMIZED_LANDING_VIDEOS: OptimizedVideoOption[] = [
   {
-    filename: "Evento Sebring_FINAL.mp4",
-    url: "/images/videos/Evento Sebring_FINAL.mp4",
+    filename: "Evento Sebring - YouTube Shorts",
+    url: "https://www.youtube.com/embed/OMyW3hntPxs?autoplay=1&mute=1&loop=1&playlist=OMyW3hntPxs&controls=1&rel=0&modestbranding=1&playsinline=1",
   },
   {
-    filename: "RTR PC COMPONENTES V2.mp4",
-    url: "/images/videos/RTR PC COMPONENTES V2.mp4",
+    filename: "Hino Ric Team Racing - YouTube",
+    url: "https://www.youtube.com/embed/xcFs9jls1z8?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1",
   },
 ];
 
@@ -97,17 +98,19 @@ export default function Landing() {
     fetchLandingData();
   }, []);
 
-  const handleUseLocalVideo = async (video: LocalVideoOption) => {
+  const isEmbedUrl = (url: string) => /youtube\.com\/embed|player\.twitch\.tv|vimeo\.com\/video/.test(url);
+
+  const handleUseLocalVideo = async (video: OptimizedVideoOption) => {
     setUsingLocalVideo(true);
     try {
       await supabase.from("images").delete().eq("category", "landing-video");
       const { error } = await supabase.from("images").insert({
-        storage_path: `videos/${video.filename}`,
+        storage_path: `embed-video/${Date.now()}`,
         url: video.url,
         filename: video.filename,
-        mime_type: "video/mp4",
+        mime_type: "text/html",
         size_bytes: 0,
-        description: "Landing background video (local file)",
+        description: "Landing background video (optimized embed)",
         category: "landing-video",
       });
 
@@ -129,7 +132,7 @@ export default function Landing() {
     if (!confirm("Remover este vídeo da landing?")) return;
     try {
       await supabase.from("images").delete().eq("id", id);
-      if (!storagePath.startsWith("videos/") || !LOCAL_LANDING_VIDEOS.some((v) => storagePath.endsWith(v.filename))) {
+      if (storagePath.startsWith("videos/")) {
         await supabase.storage.from("landing").remove([storagePath]);
       }
       toast({ title: "Vídeo removido." });
@@ -256,15 +259,26 @@ export default function Landing() {
       <section className="relative overflow-hidden border-b border-border h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)]">
         {heroVideo ? (
           <div className="absolute inset-0">
-            <video
-              key={heroVideo.id}
-              src={heroVideo.url}
-              className="absolute inset-0 h-full w-full object-cover"
-              autoPlay
-              loop
-              muted
-              playsInline
-            />
+            {isEmbedUrl(heroVideo.url) ? (
+              <iframe
+                key={heroVideo.id}
+                src={heroVideo.url}
+                title={heroVideo.description ?? "Landing background video"}
+                className="absolute inset-0 h-full w-full border-0"
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowFullScreen
+              />
+            ) : (
+              <video
+                key={heroVideo.id}
+                src={heroVideo.url}
+                className="absolute inset-0 h-full w-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            )}
           </div>
         ) : (
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.16)_0%,_transparent_60%)]" />
@@ -393,7 +407,7 @@ export default function Landing() {
                 Vídeos da página inicial (background)
               </h2>
               <p className="text-xs text-muted-foreground">
-                A usar vídeos locais em <code>/public/images/videos</code>
+                A usar embeds otimizados (YouTube/Twitch/Vimeo) para reduzir peso da landing
               </p>
             </div>
             {loading ? (
@@ -411,12 +425,22 @@ export default function Landing() {
                     key={video.id}
                     className="group relative aspect-video w-36 overflow-hidden rounded-lg border border-border bg-background sm:w-44"
                   >
-                    <video
-                      src={video.url}
-                      muted
-                      playsInline
-                      className="h-full w-full object-cover"
-                    />
+                    {isEmbedUrl(video.url) ? (
+                      <iframe
+                        src={video.url}
+                        title={video.description ?? "Landing video"}
+                        className="h-full w-full border-0"
+                        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        src={video.url}
+                        muted
+                        playsInline
+                        className="h-full w-full object-cover"
+                      />
+                    )}
                     <Button
                       type="button"
                       variant="destructive"
@@ -433,10 +457,10 @@ export default function Landing() {
             )}
             <div className="mt-5 space-y-2">
               <h3 className="text-xs font-racing uppercase tracking-wider text-muted-foreground">
-                Vídeos locais disponíveis
+                Vídeos otimizados disponíveis
               </h3>
               <div className="flex flex-wrap gap-3">
-                {LOCAL_LANDING_VIDEOS.map((video) => {
+                {OPTIMIZED_LANDING_VIDEOS.map((video) => {
                   const isSelected = heroVideo?.url === video.url;
                   return (
                     <div
@@ -445,7 +469,13 @@ export default function Landing() {
                         isSelected ? "border-primary" : "border-border"
                       } bg-background`}
                     >
-                      <video src={video.url} muted playsInline className="h-full w-full object-cover" />
+                      <iframe
+                        src={video.url}
+                        title={video.filename}
+                        className="h-full w-full border-0"
+                        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                        allowFullScreen
+                      />
                       <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1.5">
                         <p className="truncate text-[11px] text-white">{video.filename}</p>
                         <Button
