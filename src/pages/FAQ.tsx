@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { RacingLoader } from "@/components/RacingLoader";
 import type { Database } from "@/integrations/supabase/types";
 
 type FAQItem = Database["public"]["Tables"]["faq"]["Row"];
@@ -183,7 +184,7 @@ export default function FAQ() {
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.1)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,_hsl(24_90%_50%_/_0.1)_0%,_hsl(268_40%_30%_/_0.05)_40%,_transparent_70%)]" />
         <div className="container py-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -204,9 +205,7 @@ export default function FAQ() {
       {/* Content */}
       <main className="container py-12 max-w-3xl">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <RacingLoader className="py-12" />
         ) : faqs.length === 0 ? (
           <div className="card-racing p-12 text-center">
             <HelpCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />

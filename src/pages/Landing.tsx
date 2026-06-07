@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Flag, ChevronRight, Upload, Loader2, Trash2, Calendar } from "lucide-react";
+import { LeMansCelebration } from "@/components/LeMansCelebration";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -129,12 +130,16 @@ export default function Landing() {
           ))}
         </div>
       ) : (
-        <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.16)_0%,_transparent_60%)] bg-secondary/30" />
+        <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,_hsl(24_90%_50%_/_0.12)_0%,_hsl(268_40%_30%_/_0.06)_40%,_transparent_70%)] bg-secondary/30" />
       )}
-      <div className="pointer-events-none fixed inset-0 z-0 bg-black/30" />
-      <div className="pointer-events-none fixed inset-0 z-0 bg-gradient-to-b from-black/20 via-black/25 to-black/35" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-black/40" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-gradient-to-b from-black/10 via-transparent to-black/50" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,_hsl(268_30%_15%_/_0.3),_transparent_60%)]" />
 
       <div className="relative z-10">
+        {/* Celebração Le Mans */}
+        <LeMansCelebration />
+
         {/* Chamada principal: corrida em direto */}
         <section className="relative overflow-hidden border-b border-border h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)]">
 
@@ -145,10 +150,11 @@ export default function Landing() {
             transition={{ duration: 0.5 }}
             className="text-center max-w-3xl mx-auto px-4"
           >
-            <h1 className="font-racing text-3xl sm:text-4xl md:text-6xl font-bold mb-4 tracking-tight text-white">
-              Ric Team Racing
+            <h1 className="font-racing text-4xl sm:text-5xl md:text-7xl font-bold mb-6 tracking-tight text-white racing-glow">
+              <span className="text-gradient-racing">RIC TEAM</span>{" "}
+              <span className="text-white">RACING</span>
             </h1>
-            <p className="text-white/80 text-lg sm:text-xl mb-10">
+            <p className="text-white/70 text-base sm:text-lg md:text-xl mb-10 font-light tracking-wide max-w-xl mx-auto">
               Sim racing de resistência. Acompanha as nossas corridas e conquistas.
             </p>
             <motion.div
@@ -160,7 +166,7 @@ export default function Landing() {
               <Link to="/live">
                 <Button
                   size="lg"
-                  className="font-racing text-base uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white gap-2 px-8"
+                  className="btn-racing text-sm gap-2.5 px-8 py-3.5 bg-primary hover:bg-primary/90"
                 >
                   <Flag className="h-5 w-5" />
                   Ver corrida em direto
@@ -168,7 +174,7 @@ export default function Landing() {
                 </Button>
               </Link>
               <Link to="/calendario">
-                <Button variant="outline" size="lg" className="font-racing uppercase tracking-wider gap-2">
+                <Button variant="outline" size="lg" className="font-racing uppercase tracking-wider gap-2 border-white/20 text-white hover:bg-white/10 hover:border-white/30 backdrop-blur-sm">
                   <Calendar className="h-4 w-4" />
                   Calendário
                 </Button>
@@ -183,10 +189,10 @@ export default function Landing() {
         <section className="relative overflow-hidden border-b border-border h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)]">
 
         <div className="container relative flex w-full h-full flex-1 flex-col items-center justify-center py-8 sm:py-10">
-          <h2 className="font-racing mb-4 text-center text-lg font-bold uppercase tracking-wider text-white sm:text-xl">
+          <h2 className="font-racing mb-6 text-center text-base font-bold uppercase tracking-[0.2em] text-white/80 sm:text-lg">
             Hino da equipa
           </h2>
-          <div className="card-racing mx-auto aspect-video w-4/5 overflow-hidden shadow-2xl">
+          <div className="card-racing mx-auto aspect-video w-4/5 overflow-hidden shadow-2xl ring-1 ring-white/5">
             <iframe
               src={TEAM_ANTHEM_IFRAME_SRC}
               title="Hino da equipa — Ric Team Racing"

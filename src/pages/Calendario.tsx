@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MultiSelectDrivers } from "@/components/ui/multi-select-drivers";
+import { RacingLoader } from "@/components/RacingLoader";
 import type { Database } from "@/integrations/supabase/types";
 
 type Race = Database["public"]["Tables"]["races"]["Row"];
@@ -519,7 +520,7 @@ export default function Calendario() {
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.08)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,_hsl(24_90%_50%_/_0.08)_0%,_hsl(268_40%_30%_/_0.04)_40%,_transparent_70%)]" />
         <div className="container py-12 relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -531,7 +532,7 @@ export default function Calendario() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 mb-4"
+              className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 mb-4 shadow-lg shadow-primary/10"
             >
               <CalendarIcon className="h-8 w-8 text-primary" />
             </motion.div>
@@ -562,9 +563,7 @@ export default function Calendario() {
           )}
 
           {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <RacingLoader className="py-16" />
           ) : (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -1273,9 +1272,9 @@ function RaceCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.3 }}
-      className={`card-racing overflow-hidden group relative transition-all duration-300 ${
+      className={`card-racing overflow-hidden group relative ${
         isUpcoming
-          ? "hover:border-primary/50 border-l-4 border-l-primary"
+          ? "border-l-4 border-l-primary"
           : "opacity-75 hover:opacity-90 border-l-4 border-l-muted"
       } ${isActive ? "ring-2 ring-red-500/50" : ""}`}
     >

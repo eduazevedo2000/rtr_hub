@@ -146,7 +146,7 @@ export default function ResetPassword() {
   if (success) {
     return (
       <div className="page-shell flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(4_90%_58%_/_0.1)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,_hsl(24_90%_50%_/_0.08)_0%,_hsl(268_40%_30%_/_0.04)_40%,_transparent_70%)]" />
         
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -166,7 +166,7 @@ export default function ResetPassword() {
 
   return (
     <div className="page-shell flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(4_90%_58%_/_0.1)_0%,_transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,_hsl(24_90%_50%_/_0.08)_0%,_hsl(268_40%_30%_/_0.04)_40%,_transparent_70%)]" />
       
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -183,7 +183,7 @@ export default function ResetPassword() {
 
         <div className="card-racing p-8">
           <div className="text-center mb-8">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary mb-4">
+            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 mb-4 shadow-lg shadow-primary/20">
               <Lock className="h-6 w-6 text-primary-foreground" />
             </div>
             <h1 className="font-racing text-2xl font-bold">

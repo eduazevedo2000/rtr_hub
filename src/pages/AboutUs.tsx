@@ -9,7 +9,7 @@ export default function AboutUs() {
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.1)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,_hsl(24_90%_50%_/_0.1)_0%,_hsl(268_40%_30%_/_0.05)_40%,_transparent_70%)]" />
         <div className="container py-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -35,10 +35,12 @@ export default function AboutUs() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="card-racing p-4 sm:p-8"
+            className="card-racing p-5 sm:p-8"
           >
-            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
-              <Flag className="h-6 w-6 text-primary" />
+            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Flag className="h-5 w-5 text-primary" />
+              </div>
               A Nossa História
             </h2>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
@@ -53,10 +55,12 @@ export default function AboutUs() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="card-racing p-4 sm:p-8"
+            className="card-racing p-5 sm:p-8"
           >
-            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-primary" />
+            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
               Ricfazeres - Team Owner
             </h2>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
@@ -74,10 +78,12 @@ export default function AboutUs() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="card-racing p-4 sm:p-8"
+            className="card-racing p-5 sm:p-8"
           >
-            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
-              <Heart className="h-6 w-6 text-primary" />
+            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Heart className="h-5 w-5 text-primary" />
+              </div>
               A Nossa Filosofia
             </h2>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
@@ -95,10 +101,12 @@ export default function AboutUs() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="card-racing p-4 sm:p-8"
+            className="card-racing p-5 sm:p-8"
           >
-            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-primary" />
+            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Trophy className="h-5 w-5 text-primary" />
+              </div>
               As Nossas Competições
             </h2>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
@@ -116,10 +124,12 @@ export default function AboutUs() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="card-racing p-4 sm:p-8"
+            className="card-racing p-5 sm:p-8"
           >
-            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2">
-              <Target className="h-6 w-6 text-primary" />
+            <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
               A Nossa Visão
             </h2>
             <div className="space-y-4 text-muted-foreground leading-relaxed">

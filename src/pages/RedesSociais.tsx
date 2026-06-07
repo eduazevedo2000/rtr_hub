@@ -133,7 +133,7 @@ export default function RedesSociais() {
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.1)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,_hsl(24_90%_50%_/_0.1)_0%,_hsl(268_40%_30%_/_0.05)_40%,_transparent_70%)]" />
         <div className="container py-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -181,12 +181,12 @@ export default function RedesSociais() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: sectionIndex * 0.1 + index * 0.08 }}
-                      className="card-racing overflow-hidden group cursor-pointer hover:border-primary/50 transition-colors flex min-w-0 flex-col"
+                      className="card-racing overflow-hidden group cursor-pointer flex min-w-0 flex-col"
                     >
                       <div className="p-4 sm:p-6 flex-1 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
                           <div
-                            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg overflow-hidden"
+                            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl overflow-hidden"
                             style={{ backgroundColor: `${link.color}20` }}
                           >
                             <Logo className="h-7 w-7" />

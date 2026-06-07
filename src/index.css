@@ -1,77 +1,63 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* RTR Racing Design System - Dark motorsport theme */
-
 @layer base {
   :root {
-    /* Racing dark theme - always dark */
-    --background: 220 20% 6%;
-    --foreground: 0 0% 98%;
+    --background: 228 22% 5%;
+    --foreground: 0 0% 97%;
 
-    --card: 220 18% 10%;
-    --card-foreground: 0 0% 98%;
+    --card: 228 20% 9%;
+    --card-foreground: 0 0% 97%;
 
-    --popover: 220 18% 10%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 228 20% 9%;
+    --popover-foreground: 0 0% 97%;
 
-    /*
-     * Paleta equipa (viatura RTR): laranja + roxo real, versão suave e clean.
-     * — primary: laranja de destaque (menos saturação que “safety orange”)
-     * — accent: superfícies com rasto roxo (hover, secundário)
-     * — racing-purple: roxo royal suavizado + lavanda para glows
-     */
-    --primary: 26 56% 55%;
+    --primary: 24 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    /* Carbon + leve calor neutro */
-    --secondary: 220 14% 16%;
+    --secondary: 228 16% 14%;
     --secondary-foreground: 0 0% 94%;
 
-    --muted: 268 10% 17%;
-    --muted-foreground: 220 9% 58%;
+    --muted: 260 10% 16%;
+    --muted-foreground: 228 12% 52%;
 
-    --accent: 268 14% 19%;
-    --accent-foreground: 28 20% 92%;
+    --accent: 262 18% 18%;
+    --accent-foreground: 24 30% 92%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 265 9% 22%;
-    --input: 268 8% 16%;
-    --ring: 26 56% 55%;
+    --border: 260 10% 18%;
+    --input: 260 10% 14%;
+    --ring: 24 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
 
-    /* Racing-specific colors */
     --racing-red: 4 90% 58%;
     --racing-red-glow: 4 100% 65%;
-    /* Roxo da viatura (Tailwind: racing.purple) + lavanda suave */
-    --racing-purple: 265 40% 56%;
-    --racing-purple-glow: 272 28% 68%;
-    --carbon: 220 18% 10%;
-    --carbon-light: 220 15% 15%;
+    --racing-purple: 268 52% 58%;
+    --racing-purple-glow: 272 40% 70%;
+    --carbon: 228 20% 9%;
+    --carbon-light: 228 16% 14%;
     --pit-yellow: 48 100% 50%;
     --safety-car: 48 90% 55%;
-    --green-flag: 142 70% 45%;
+    --green-flag: 155 72% 40%;
     --checkered: 0 0% 100%;
 
-    /* Gradientes discretos: laranja → roxo (identidade sem “neon”) */
-    --gradient-racing: linear-gradient(135deg, hsl(28 48% 58%) 0%, hsl(268 36% 50%) 100%);
-    --gradient-carbon: linear-gradient(180deg, hsl(220 18% 12%) 0%, hsl(220 20% 6%) 100%);
+    --gradient-racing: linear-gradient(135deg, hsl(24 95% 52%) 0%, hsl(268 50% 52%) 100%);
+    --gradient-carbon: linear-gradient(180deg, hsl(228 20% 11%) 0%, hsl(228 22% 5%) 100%);
     --gradient-glow: radial-gradient(
       ellipse at center,
-      hsl(26 45% 55% / 0.12) 0%,
-      hsl(265 32% 48% / 0.07) 48%,
+      hsl(24 90% 52% / 0.14) 0%,
+      hsl(268 42% 50% / 0.08) 48%,
       transparent 72%
     );
 
-    /* Sombras suaves com toque laranja */
-    --shadow-racing: 0 4px 32px -8px hsl(26 48% 45% / 0.28);
-    --shadow-card: 0 8px 32px -8px hsl(0 0% 0% / 0.5);
+    --shadow-racing: 0 4px 40px -8px hsl(24 90% 48% / 0.32);
+    --shadow-card: 0 1px 0 0 hsl(0 0% 100% / 0.03) inset, 0 8px 40px -12px hsl(0 0% 0% / 0.6);
   }
 }
 
@@ -80,18 +66,18 @@
     @apply border-border;
   }
 
-  /* Fundo global: imagem + sombreado para leitura (páginas usam .page-shell por cima) */
   html {
     min-height: 100%;
-    background-color: hsl(220 25% 8%);
+    background-color: hsl(228 22% 7%);
     background-image:
+      radial-gradient(ellipse 120% 60% at 50% 0%, hsl(268 30% 14% / 0.3) 0%, transparent 70%),
       linear-gradient(
         180deg,
-        hsl(220 28% 7% / 0.52) 0%,
-        hsl(220 24% 9% / 0.58) 45%,
-        hsl(220 22% 7% / 0.64) 100%
+        hsl(228 26% 8% / 0.4) 0%,
+        hsl(228 22% 7% / 0.45) 50%,
+        hsl(228 20% 6% / 0.5) 100%
       ),
-      url("/images/site-bg.png");
+      url(“/images/site-bg.png”);
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -101,16 +87,15 @@
   body {
     @apply text-foreground font-sans antialiased;
     background: transparent;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Orbitron', sans-serif;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
   }
 
-  /* Prevent iOS auto-zoom on inputs by ensuring 16px font-size */
   input, textarea, select {
     font-size: 16px;
   }
@@ -126,69 +111,90 @@
   .racing-text {
     font-family: 'Orbitron', sans-serif;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
   }
 
   .racing-glow {
     text-shadow:
-      0 0 18px hsl(26 50% 52% / 0.28),
-      0 0 36px hsl(265 35% 50% / 0.15);
+      0 0 24px hsl(24 90% 52% / 0.35),
+      0 0 64px hsl(268 50% 52% / 0.18);
   }
 
   .card-racing {
-    @apply bg-card border border-border rounded-lg;
-    background: linear-gradient(180deg, hsl(220 18% 12%) 0%, hsl(220 18% 8%) 100%);
-    box-shadow: var(--shadow-card);
+    @apply border border-border;
+    border-radius: 1.25rem;
+    background: hsl(228 20% 10% / 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.04) inset,
+      0 8px 40px -12px hsl(0 0% 0% / 0.5);
+    position: relative;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-racing:hover {
+    border-color: hsl(260 10% 26%);
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.06) inset,
+      0 12px 48px -12px hsl(0 0% 0% / 0.6);
   }
 
   .btn-racing {
-    @apply bg-primary text-primary-foreground font-semibold px-6 py-3 rounded-md;
+    @apply bg-primary text-primary-foreground font-semibold px-6 py-3;
     font-family: 'Orbitron', sans-serif;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    box-shadow: var(--shadow-racing);
-    transition: all 0.3s ease;
+    letter-spacing: 0.06em;
+    border-radius: 0.875rem;
+    box-shadow: var(--shadow-racing), 0 0 0 1px hsl(24 100% 50% / 0.3);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .btn-racing:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 32px -6px hsl(26 50% 45% / 0.35);
+    box-shadow:
+      0 8px 40px -6px hsl(24 90% 48% / 0.45),
+      0 0 0 1px hsl(24 100% 55% / 0.5);
   }
 
   .event-fcy {
     @apply border-l-4;
     border-color: hsl(var(--pit-yellow));
-    background: linear-gradient(90deg, hsl(48 100% 50% / 0.1) 0%, transparent 50%);
+    background: linear-gradient(90deg, hsl(48 100% 50% / 0.08) 0%, transparent 50%);
   }
 
   .event-incident {
     @apply border-l-4;
     border-color: hsl(var(--racing-red));
-    background: linear-gradient(90deg, hsl(4 90% 58% / 0.1) 0%, transparent 50%);
+    background: linear-gradient(90deg, hsl(4 90% 58% / 0.08) 0%, transparent 50%);
   }
 
   .event-pit {
     @apply border-l-4;
     border-color: hsl(var(--muted-foreground));
-    background: linear-gradient(90deg, hsl(220 10% 55% / 0.1) 0%, transparent 50%);
+    background: linear-gradient(90deg, hsl(228 12% 52% / 0.08) 0%, transparent 50%);
   }
 
   .event-green {
     @apply border-l-4;
     border-color: hsl(var(--green-flag));
-    background: linear-gradient(90deg, hsl(142 70% 45% / 0.1) 0%, transparent 50%);
+    background: linear-gradient(90deg, hsl(155 72% 40% / 0.08) 0%, transparent 50%);
   }
 
   .lap-badge {
-    @apply inline-flex items-center justify-center min-w-[3rem] px-2 py-1 rounded font-bold text-sm;
+    @apply inline-flex items-center justify-center min-w-[3rem] px-2.5 py-1.5 font-bold text-sm;
     font-family: 'Orbitron', sans-serif;
     background: hsl(var(--secondary));
     border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
   }
 
   .position-badge {
-    @apply inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm;
+    @apply inline-flex items-center justify-center w-10 h-10 font-bold text-sm;
     font-family: 'Orbitron', sans-serif;
+    border-radius: 0.75rem;
   }
 
   .position-badge-large {
@@ -196,48 +202,147 @@
   }
 
   .position-badge.p1 {
-    background: linear-gradient(135deg, hsl(48 100% 50%) 0%, hsl(36 100% 45%) 100%);
-    color: hsl(220 20% 6%);
+    background: linear-gradient(135deg, hsl(48 100% 50%) 0%, hsl(36 100% 42%) 100%);
+    color: hsl(228 22% 5%);
+    box-shadow: 0 0 20px hsl(48 100% 50% / 0.3);
   }
 
   .position-badge.p2 {
-    background: linear-gradient(135deg, hsl(220 10% 75%) 0%, hsl(220 10% 55%) 100%);
-    color: hsl(220 20% 6%);
+    background: linear-gradient(135deg, hsl(220 10% 78%) 0%, hsl(220 10% 56%) 100%);
+    color: hsl(228 22% 5%);
   }
 
   .position-badge.p3 {
-    background: linear-gradient(135deg, hsl(25 80% 50%) 0%, hsl(15 70% 40%) 100%);
+    background: linear-gradient(135deg, hsl(25 80% 50%) 0%, hsl(15 70% 38%) 100%);
     color: hsl(0 0% 100%);
   }
 
-  /* Conteúdo por cima do fundo global (translúcido + blur) */
   .page-shell {
     @apply min-h-screen;
-    background-color: hsl(220 22% 8% / 0.52);
-    backdrop-filter: blur(8px);
+    background-color: hsl(228 22% 7% / 0.35);
+    backdrop-filter: blur(4px);
   }
 }
 
 @layer utilities {
   .animate-pulse-racing {
-    animation: pulse-racing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: pulse-racing 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
   @keyframes pulse-racing {
     0%, 100% {
       opacity: 1;
-      box-shadow: 0 0 18px hsl(26 50% 52% / 0.3);
+      box-shadow: 0 0 20px hsl(24 90% 52% / 0.35);
     }
     50% {
-      opacity: 0.85;
-      box-shadow: 0 0 28px hsl(265 38% 52% / 0.2);
+      opacity: 0.88;
+      box-shadow: 0 0 32px hsl(268 50% 52% / 0.25);
     }
   }
 
   .text-gradient-racing {
-    background: linear-gradient(135deg, hsl(30 46% 62%) 0%, hsl(268 34% 58%) 100%);
+    background: linear-gradient(135deg, hsl(24 95% 55%) 0%, hsl(268 48% 60%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  /* Le Mans Celebration */
+  .text-gold-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(48 100% 70%) 0%,
+      hsl(42 100% 50%) 30%,
+      hsl(36 100% 42%) 60%,
+      hsl(48 100% 65%) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gold-gradient-light {
+    background: linear-gradient(
+      135deg,
+      hsl(48 100% 78%) 0%,
+      hsl(42 95% 60%) 50%,
+      hsl(48 100% 72%) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .lemans-title {
+    filter: drop-shadow(0 2px 16px hsl(48 100% 50% / 0.35));
+  }
+
+  .lemans-celebration {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, hsl(48 60% 20% / 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 20% 80%, hsl(268 40% 15% / 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 80% at 80% 80%, hsl(24 60% 15% / 0.1) 0%, transparent 50%),
+      linear-gradient(180deg, hsl(228 22% 5% / 0.95) 0%, hsl(228 24% 7% / 0.98) 100%);
+  }
+
+  .lemans-year-badge {
+    background: linear-gradient(135deg, hsl(48 100% 50%) 0%, hsl(36 100% 42%) 100%);
+    color: hsl(228 22% 5%);
+    padding: 0.4em 1.2em;
+    border-radius: 0.5rem;
+    box-shadow:
+      0 0 24px hsl(48 100% 50% / 0.35),
+      0 0 60px hsl(48 100% 50% / 0.12),
+      inset 0 1px 0 hsl(48 100% 80% / 0.4);
+  }
+
+  .checkered-strip {
+    height: 6px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      hsl(48 100% 50% / 0.5) 0px,
+      hsl(48 100% 50% / 0.5) 6px,
+      transparent 6px,
+      transparent 12px
+    );
+  }
+
+  @keyframes confetti-fall {
+    0% {
+      transform: translateY(0) translateX(0) rotate(0deg);
+      opacity: 1;
+    }
+    75% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(calc(100vh + 20px)) translateX(var(--drift)) rotate(calc(var(--rotate) + 360deg));
+      opacity: 0;
+    }
+  }
+
+  .confetti-piece {
+    animation: confetti-fall linear infinite;
+    border-radius: 1px;
+  }
+
+  @keyframes sparkle-pulse {
+    0%, 100% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .sparkle {
+    width: 4px;
+    height: 4px;
+    background: hsl(48 100% 75%);
+    border-radius: 50%;
+    box-shadow: 0 0 6px 2px hsl(48 100% 60% / 0.6);
+    animation: sparkle-pulse 2s ease-in-out infinite;
   }
 }

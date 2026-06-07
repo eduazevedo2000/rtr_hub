@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Users, Loader2, User, Instagram, ExternalLink, Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { RacingLoader } from "@/components/RacingLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
@@ -293,7 +294,7 @@ export default function Pilotos() {
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.1)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,_hsl(24_90%_50%_/_0.1)_0%,_hsl(268_40%_30%_/_0.05)_40%,_transparent_70%)]" />
         <div className="container py-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -314,9 +315,7 @@ export default function Pilotos() {
       {/* Content */}
       <main className="container py-12">
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <RacingLoader className="py-12" />
         ) : drivers.length === 0 ? (
           <div className="card-racing p-12 text-center max-w-lg mx-auto">
             <User className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
@@ -341,7 +340,7 @@ export default function Pilotos() {
                 </Button>
               </div>
             )}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
+            <div className="grid gap-5 sm:gap-6 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 max-w-6xl mx-auto">
             {drivers.map((driver, index) => {
               const instagramHandle = driver.instagram?.replace(/^@/, "")?.trim();
               const instagramUrl =
@@ -352,18 +351,19 @@ export default function Pilotos() {
               return (
                 <motion.div
                   key={driver.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="card-racing p-6 hover:border-primary/50 transition-colors group relative"
+                  initial={{ opacity: 0, y: 20, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ delay: index * 0.04, type: "spring", stiffness: 260, damping: 20 }}
+                  whileHover={{ y: -6, scale: 1.02 }}
+                  className="card-racing p-5 sm:p-6 group relative flex flex-col items-center text-center"
                 >
                   {user && (
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9 rounded-full"
+                        className="h-8 w-8 rounded-xl bg-secondary/80 backdrop-blur-sm"
                         onClick={(e) => openEdit(driver, e)}
                         aria-label={`Editar ${driver.name}`}
                       >
@@ -373,7 +373,7 @@ export default function Pilotos() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                        className="h-8 w-8 rounded-xl bg-secondary/80 backdrop-blur-sm hover:bg-destructive/20 hover:text-destructive"
                         onClick={(e) => openDelete(driver, e)}
                         aria-label={`Apagar ${driver.name}`}
                       >
@@ -381,49 +381,36 @@ export default function Pilotos() {
                       </Button>
                     </div>
                   )}
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10">
-                      {driver.image_url ? (
-                        <img
-                          src={driver.image_url}
-                          alt={driver.name}
-                          className="h-full w-full object-contain object-center"
-                        />
-                      ) : (
-                        <User className="h-6 w-6 text-primary" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-racing text-lg font-bold truncate">
-                        {driver.name}
-                      </h3>
-                      {/* {driver.known_as && (
-                        <p className="text-sm text-primary font-medium mt-0.5">
-                          {driver.known_as}
-                        </p>
-                      )} */}
-                      {driver.category && (
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider mt-2">
-                          {driver.category}
-                        </p>
-                      )}
-                      {instagramUrl && (
-                        <a
-                          href={instagramUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 mt-3 text-[#E4405F] hover:text-[#E4405F]/80 transition-colors"
-                          aria-label={`Instagram de ${driver.name}`}
-                        >
-                          <img src="/images/instagram.png" alt="Instagram" className="h-4 w-4 shrink-0" />
-                          {/* <span className="text-sm font-medium truncate">
-                            @{instagramHandle}
-                          </span>
-                          <ExternalLink className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" /> */}
-                        </a>
-                      )}
-                    </div>
+                  <div className="flex h-20 w-20 sm:h-24 sm:w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary/15 to-racing-purple/10 ring-2 ring-white/5 mb-4">
+                    {driver.image_url ? (
+                      <img
+                        src={driver.image_url}
+                        alt={driver.name}
+                        className="h-full w-full object-contain object-center"
+                      />
+                    ) : (
+                      <User className="h-7 w-7 text-primary/60" />
+                    )}
                   </div>
+                  <h3 className="font-racing text-sm sm:text-base font-bold truncate w-full">
+                    {driver.name}
+                  </h3>
+                  {driver.category && (
+                    <span className="inline-block mt-2 px-3 py-1 text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider rounded-full bg-secondary/60 border border-border/50">
+                      {driver.category}
+                    </span>
+                  )}
+                  {instagramUrl && (
+                    <a
+                      href={instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 mt-3 text-[#E4405F] hover:text-[#E4405F]/80 transition-colors"
+                      aria-label={`Instagram de ${driver.name}`}
+                    >
+                      <img src="/images/instagram.png" alt="Instagram" className="h-4 w-4 shrink-0" />
+                    </a>
+                  )}
                 </motion.div>
               );
             })}

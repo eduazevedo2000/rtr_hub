@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RacingLoader } from "@/components/RacingLoader";
 import * as Flags from "country-flag-icons/react/3x2";
 import { parsePdfToStandings, type ParsedStanding } from "@/utils/pdfParser";
 
@@ -623,7 +624,7 @@ export default function Classificacao() {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.15)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,_hsl(24_90%_50%_/_0.12)_0%,_hsl(268_40%_30%_/_0.06)_40%,_transparent_70%)]" />
         <div className="container py-12 md:py-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -645,21 +646,29 @@ export default function Classificacao() {
       {/* Main Content */}
       <main className="container py-8">
         {/* Class Tabs */}
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <Button
-            variant={selectedClass === "LMP2" ? "default" : "outline"}
-            onClick={() => setSelectedClass("LMP2")}
-            className="font-racing"
-          >
-            LMP2
-          </Button>
-          <Button
-            variant={selectedClass === "GT3 PRO" ? "default" : "outline"}
-            onClick={() => setSelectedClass("GT3 PRO")}
-            className="font-racing"
-          >
-            GT3 PRO
-          </Button>
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <div className="inline-flex rounded-2xl bg-secondary/50 border border-border/40 p-1 backdrop-blur-sm">
+            <button
+              onClick={() => setSelectedClass("LMP2")}
+              className={`font-racing text-sm uppercase tracking-wider px-6 py-2.5 rounded-xl transition-all ${
+                selectedClass === "LMP2"
+                  ? "bg-primary text-white shadow-md shadow-primary/30"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              LMP2
+            </button>
+            <button
+              onClick={() => setSelectedClass("GT3 PRO")}
+              className={`font-racing text-sm uppercase tracking-wider px-6 py-2.5 rounded-xl transition-all ${
+                selectedClass === "GT3 PRO"
+                  ? "bg-primary text-white shadow-md shadow-primary/30"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              GT3 PRO
+            </button>
+          </div>
         </div>
 
         {/* Add Team Button (Admin Only) */}
@@ -678,9 +687,7 @@ export default function Classificacao() {
 
         {/* Standings Table */}
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">A carregar classificação...</p>
-          </div>
+          <RacingLoader className="py-12" />
         ) : standings.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">

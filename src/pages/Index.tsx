@@ -284,7 +284,7 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(4_90%_58%_/_0.15)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,_hsl(24_90%_50%_/_0.12)_0%,_hsl(268_40%_30%_/_0.06)_40%,_transparent_70%)]" />
         <div className="container py-12 md:py-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -292,7 +292,7 @@ const Index = () => {
             transition={{ duration: 0.5 }}
             className="text-center"
           >
-            <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+            <div className="inline-flex items-center gap-2 mb-4 px-5 py-2.5 rounded-2xl bg-primary/8 border border-primary/15 backdrop-blur-sm">
               <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
               <span className="text-xs font-racing uppercase tracking-widest text-primary">
                 {activeRace ? "Corrida em Direto" : "Próxima Corrida"}
@@ -318,7 +318,7 @@ const Index = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="relative inline-flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 px-4 sm:px-6 py-4 rounded-xl bg-card border border-border w-full sm:w-auto text-left"
+                className="relative inline-flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 px-5 sm:px-8 py-5 rounded-2xl bg-card/50 backdrop-blur-md border border-border/50 w-full sm:w-auto text-left"
               >
                 {user && (
                   <Button

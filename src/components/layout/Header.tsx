@@ -169,7 +169,7 @@ export function Header() {
               transition={{ duration: 0.2 }}
               className="absolute top-full left-0 pt-2 z-50"
             >
-              <div className="min-w-[200px] bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-lg overflow-hidden">
+              <div className="min-w-[200px] bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg overflow-hidden">
                 {item.items.map((subItem) => {
                   const SubIcon = subItem.icon;
                   const isSubActive = location.pathname === subItem.path;
@@ -181,7 +181,7 @@ export function Header() {
                       className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
                         isSubActive
                           ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                       }`}
                     >
                       <SubIcon className="h-4 w-4" />
@@ -279,12 +279,13 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-[hsl(220_22%_8%/0.55)] backdrop-blur-md supports-[backdrop-filter]:bg-[hsl(220_22%_8%/0.48)]">
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-[hsl(228_22%_5%/0.65)] backdrop-blur-xl supports-[backdrop-filter]:bg-[hsl(228_22%_5%/0.55)]">
       <div className="container relative flex h-16 items-center justify-between py-1 sm:h-20 md:min-h-24">
         {/* Brand */}
         <Link to="/" className="flex shrink-0 items-center">
-          <span className="font-racing text-base sm:text-lg md:text-xl uppercase tracking-wider text-foreground">
-            Ric Team Racing
+          <span className="font-racing text-sm sm:text-base md:text-lg uppercase tracking-[0.15em] text-foreground">
+            <span className="text-gradient-racing">RTR</span>{" "}
+            <span className="hidden sm:inline font-light tracking-[0.2em] text-foreground/80">Racing</span>
           </span>
         </Link>
 
@@ -352,7 +353,7 @@ export function Header() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="md:hidden overflow-hidden border-t border-border bg-[hsl(220_22%_8%/0.82)] backdrop-blur-md"
+            className="md:hidden overflow-hidden border-t border-border/60 bg-[hsl(228_22%_5%/0.88)] backdrop-blur-xl"
           >
             <div className="container py-4 space-y-1">
               {navItems.map((item, index) => (
