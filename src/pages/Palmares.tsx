@@ -277,15 +277,32 @@ export default function Palmares() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <Trophy className="h-12 w-12 mx-auto mb-4 text-racing-yellow" />
-            <h1 className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 200, damping: 12 }}
+            >
+              <Trophy className="h-12 w-12 mx-auto mb-4 text-racing-yellow" />
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4"
+            >
               Palmarés
-            </h1>
-            <p className="text-muted-foreground max-w-xl mx-auto">
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35, duration: 0.5 }}
+              className="text-muted-foreground max-w-xl mx-auto"
+            >
               Os melhores momentos e conquistas da Ric Team Racing ao longo das temporadas.
-            </p>
+            </motion.p>
           </motion.div>
         </div>
       </section>
@@ -317,9 +334,10 @@ export default function Palmares() {
                     return (
                       <motion.div
                         key={`year-${item.year}`}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.06 }}
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true, margin: "-30px" }}
+                        transition={{ duration: 0.4 }}
                         className="relative flex items-center gap-4 sm:gap-6 py-4 first:pt-0"
                       >
                         <div className="flex w-10 shrink-0 justify-center">
@@ -339,9 +357,10 @@ export default function Palmares() {
                   return (
                     <motion.div
                       key={race.id}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.06 }}
+                      initial={{ opacity: 0, y: 24 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-30px" }}
+                      transition={{ duration: 0.5 }}
                       className="relative flex items-start gap-4 sm:gap-6 py-6 last:pb-0"
                     >
                       <div className="flex w-10 shrink-0 justify-center pt-1.5">

@@ -189,15 +189,32 @@ export default function FAQ() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <HelpCircle className="h-12 w-12 mx-auto mb-4 text-primary" />
-            <h1 className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 200, damping: 12 }}
+            >
+              <HelpCircle className="h-12 w-12 mx-auto mb-4 text-primary" />
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4"
+            >
               FAQ
-            </h1>
-            <p className="text-muted-foreground max-w-xl mx-auto">
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35, duration: 0.5 }}
+              className="text-muted-foreground max-w-xl mx-auto"
+            >
               Perguntas frequentes sobre a Ric Team Racing e o mundo do sim racing.
-            </p>
+            </motion.p>
           </motion.div>
         </div>
       </section>

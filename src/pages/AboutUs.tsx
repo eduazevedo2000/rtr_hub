@@ -14,15 +14,32 @@ export default function AboutUs() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <Users className="h-12 w-12 mx-auto mb-4 text-primary" />
-            <h1 className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 200, damping: 12 }}
+            >
+              <Users className="h-12 w-12 mx-auto mb-4 text-primary" />
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4"
+            >
               SOBRE NÓS
-            </h1>
-            <p className="text-muted-foreground max-w-xl mx-auto">
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35, duration: 0.5 }}
+              className="text-muted-foreground max-w-xl mx-auto"
+            >
               Conhece a história, valores e visão da Ric Team Racing.
-            </p>
+            </motion.p>
           </motion.div>
         </div>
       </section>
@@ -32,9 +49,11 @@ export default function AboutUs() {
         <div className="space-y-8">
           {/* História/Fundação */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5 }}
+            whileHover={{ y: -2 }}
             className="card-racing p-5 sm:p-8"
           >
             <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
@@ -52,9 +71,11 @@ export default function AboutUs() {
 
           {/* Ricfazeres */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            whileHover={{ y: -2 }}
             className="card-racing p-5 sm:p-8"
           >
             <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
@@ -75,9 +96,11 @@ export default function AboutUs() {
 
           {/* Filosofia */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            whileHover={{ y: -2 }}
             className="card-racing p-5 sm:p-8"
           >
             <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
@@ -98,9 +121,11 @@ export default function AboutUs() {
 
           {/* Competições */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            whileHover={{ y: -2 }}
             className="card-racing p-5 sm:p-8"
           >
             <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
@@ -121,9 +146,11 @@ export default function AboutUs() {
 
           {/* Visão Futura */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            whileHover={{ y: -2 }}
             className="card-racing p-5 sm:p-8"
           >
             <h2 className="font-racing text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">

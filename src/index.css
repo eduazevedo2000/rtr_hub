@@ -221,6 +221,16 @@
     @apply min-h-screen;
     background-color: hsl(228 22% 7% / 0.35);
     backdrop-filter: blur(4px);
+    animation: page-enter 0.4s ease-out;
+  }
+
+  @keyframes page-enter {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 }
 
@@ -248,33 +258,31 @@
   }
 
   /* Le Mans Celebration */
-  .text-gold-gradient {
+  .text-gold-gradient-shimmer {
     background: linear-gradient(
-      135deg,
+      90deg,
       hsl(48 100% 70%) 0%,
-      hsl(42 100% 50%) 30%,
+      hsl(42 100% 50%) 20%,
+      hsl(36 100% 42%) 40%,
+      hsl(48 100% 80%) 50%,
       hsl(36 100% 42%) 60%,
-      hsl(48 100% 65%) 100%
+      hsl(42 100% 50%) 80%,
+      hsl(48 100% 70%) 100%
     );
+    background-size: 200% 100%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    animation: gold-shimmer 4s ease-in-out infinite;
   }
 
-  .text-gold-gradient-light {
-    background: linear-gradient(
-      135deg,
-      hsl(48 100% 78%) 0%,
-      hsl(42 95% 60%) 50%,
-      hsl(48 100% 72%) 100%
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  @keyframes gold-shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
   }
 
   .lemans-title {
-    filter: drop-shadow(0 2px 16px hsl(48 100% 50% / 0.35));
+    filter: drop-shadow(0 2px 20px hsl(48 100% 50% / 0.4));
   }
 
   .lemans-celebration {
@@ -283,6 +291,35 @@
       radial-gradient(ellipse 60% 80% at 20% 80%, hsl(268 40% 15% / 0.1) 0%, transparent 50%),
       radial-gradient(ellipse 60% 80% at 80% 80%, hsl(24 60% 15% / 0.1) 0%, transparent 50%),
       linear-gradient(180deg, hsl(228 22% 5% / 0.95) 0%, hsl(228 24% 7% / 0.98) 100%);
+  }
+
+  .lemans-bg-pulse {
+    background: radial-gradient(ellipse 50% 40% at 50% 40%, hsl(48 100% 50% / 0.06), transparent 70%);
+    animation: bg-pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes bg-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  .lemans-label {
+    animation: label-glow 3s ease-in-out infinite;
+  }
+
+  @keyframes label-glow {
+    0%, 100% { text-shadow: 0 0 4px hsl(48 100% 50% / 0.2); }
+    50% { text-shadow: 0 0 12px hsl(48 100% 50% / 0.5), 0 0 24px hsl(48 100% 50% / 0.2); }
+  }
+
+  .trophy-glow {
+    filter: drop-shadow(0 0 8px hsl(48 100% 50% / 0.5));
+    animation: trophy-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes trophy-pulse {
+    0%, 100% { filter: drop-shadow(0 0 6px hsl(48 100% 50% / 0.4)); }
+    50% { filter: drop-shadow(0 0 16px hsl(48 100% 50% / 0.8)) drop-shadow(0 0 30px hsl(48 100% 50% / 0.3)); }
   }
 
   .lemans-year-badge {
@@ -294,6 +331,40 @@
       0 0 24px hsl(48 100% 50% / 0.35),
       0 0 60px hsl(48 100% 50% / 0.12),
       inset 0 1px 0 hsl(48 100% 80% / 0.4);
+  }
+
+  .lemans-year-float {
+    animation: year-float 3s ease-in-out infinite;
+  }
+
+  @keyframes year-float {
+    0%, 100% { transform: translateY(0); box-shadow: 0 0 24px hsl(48 100% 50% / 0.35), 0 0 60px hsl(48 100% 50% / 0.12); }
+    50% { transform: translateY(-4px); box-shadow: 0 0 32px hsl(48 100% 50% / 0.5), 0 0 80px hsl(48 100% 50% / 0.2); }
+  }
+
+  .lemans-divider {
+    background: linear-gradient(90deg, transparent, hsl(48 100% 50% / 0.5), transparent);
+    animation: divider-glow 3s ease-in-out infinite;
+  }
+
+  @keyframes divider-glow {
+    0%, 100% { opacity: 0.6; box-shadow: none; }
+    50% { opacity: 1; box-shadow: 0 0 8px hsl(48 100% 50% / 0.3); }
+  }
+
+  .light-ray {
+    width: 2px;
+    height: 120%;
+    background: linear-gradient(180deg, transparent 0%, hsl(48 100% 50% / var(--ray-opacity)) 30%, hsl(48 100% 50% / var(--ray-opacity)) 70%, transparent 100%);
+    transform-origin: center center;
+    transform: rotate(var(--ray-rotation));
+    animation: ray-sweep 8s ease-in-out infinite;
+    animation-delay: var(--ray-delay);
+  }
+
+  @keyframes ray-sweep {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
   }
 
   .checkered-strip {
@@ -309,40 +380,48 @@
 
   @keyframes confetti-fall {
     0% {
-      transform: translateY(0) translateX(0) rotate(0deg);
+      transform: translateY(0) translateX(0) rotate(0deg) scale(1);
       opacity: 1;
+    }
+    25% {
+      opacity: 1;
+      transform: translateY(25vh) translateX(calc(var(--drift) * 0.3)) rotate(calc(var(--rotate) * 0.3)) scale(0.95);
     }
     75% {
-      opacity: 1;
+      opacity: 0.8;
     }
     100% {
-      transform: translateY(calc(100vh + 20px)) translateX(var(--drift)) rotate(calc(var(--rotate) + 360deg));
+      transform: translateY(calc(100vh + 20px)) translateX(var(--drift)) rotate(calc(var(--rotate) + 720deg)) scale(0.6);
       opacity: 0;
     }
   }
 
   .confetti-piece {
     animation: confetti-fall linear infinite;
-    border-radius: 1px;
+    border-radius: 2px;
   }
 
-  @keyframes sparkle-pulse {
+  @keyframes sparkle-star-pulse {
     0%, 100% {
       opacity: 0;
-      transform: scale(0.3);
+      transform: scale(calc(var(--sparkle-scale) * 0.2)) rotate(0deg);
     }
-    50% {
+    30% {
       opacity: 1;
-      transform: scale(1);
+      transform: scale(var(--sparkle-scale)) rotate(30deg);
+    }
+    70% {
+      opacity: 0.8;
+      transform: scale(calc(var(--sparkle-scale) * 0.8)) rotate(60deg);
     }
   }
 
-  .sparkle {
-    width: 4px;
-    height: 4px;
-    background: hsl(48 100% 75%);
-    border-radius: 50%;
-    box-shadow: 0 0 6px 2px hsl(48 100% 60% / 0.6);
-    animation: sparkle-pulse 2s ease-in-out infinite;
+  .sparkle-star {
+    width: 6px;
+    height: 6px;
+    background: hsl(48 100% 80%);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    filter: drop-shadow(0 0 3px hsl(48 100% 60% / 0.8));
+    animation: sparkle-star-pulse 2.5s ease-in-out infinite;
   }
 }

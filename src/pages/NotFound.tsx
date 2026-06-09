@@ -17,20 +17,39 @@ const NotFound = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
         className="relative text-center px-4"
       >
-        <h1 className="font-racing text-7xl sm:text-9xl font-bold text-gradient-racing mb-4">
+        <motion.h1
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 150, damping: 12 }}
+          className="font-racing text-7xl sm:text-9xl font-bold text-gradient-racing mb-4"
+        >
           404
-        </h1>
-        <p className="text-lg text-muted-foreground mb-8 font-light">
-          Esta pagina nao existe.
-        </p>
-        <Link to="/">
-          <Button className="btn-racing gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Voltar ao inicio
-          </Button>
-        </Link>
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="text-lg text-muted-foreground mb-8 font-light"
+        >
+          Esta página não existe.
+        </motion.p>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+        >
+          <Link to="/">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+              <Button className="btn-racing gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Voltar ao início
+              </Button>
+            </motion.div>
+          </Link>
+        </motion.div>
       </motion.div>
     </div>
   );

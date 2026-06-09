@@ -138,15 +138,32 @@ export default function RedesSociais() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <Globe className="h-12 w-12 mx-auto mb-4 text-primary" />
-            <h1 className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 200, damping: 12 }}
+            >
+              <Globe className="h-12 w-12 mx-auto mb-4 text-primary" />
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4"
+            >
               Redes Sociais
-            </h1>
-            <p className="text-muted-foreground max-w-xl mx-auto">
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35, duration: 0.5 }}
+              className="text-muted-foreground max-w-xl mx-auto"
+            >
               Segue a Ric Team Racing e o RicFazeres no YouTube e na Twitch. Transmissões, highlights e tudo sobre sim racing.
-            </p>
+            </motion.p>
           </motion.div>
         </div>
       </section>
@@ -178,9 +195,11 @@ export default function RedesSociais() {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: sectionIndex * 0.1 + index * 0.08 }}
+                      initial={{ opacity: 0, y: 25, scale: 0.95 }}
+                      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: sectionIndex * 0.1 + index * 0.08, type: "spring", stiffness: 200, damping: 20 }}
+                      whileHover={{ y: -6, scale: 1.03 }}
                       className="card-racing overflow-hidden group cursor-pointer flex min-w-0 flex-col"
                     >
                       <div className="p-4 sm:p-6 flex-1 flex flex-col">

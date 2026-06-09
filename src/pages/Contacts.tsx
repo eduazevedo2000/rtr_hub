@@ -29,15 +29,32 @@ export default function Contacts() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <Mail className="h-12 w-12 mx-auto mb-4 text-primary" />
-            <h1 className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4">
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 200, damping: 12 }}
+            >
+              <Mail className="h-12 w-12 mx-auto mb-4 text-primary" />
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="font-racing text-2xl sm:text-4xl md:text-5xl font-bold mb-4"
+            >
               Contactos
-            </h1>
-            <p className="text-muted-foreground max-w-xl mx-auto">
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35, duration: 0.5 }}
+              className="text-muted-foreground max-w-xl mx-auto"
+            >
               Fica em contacto com a Ric Team Racing. Envia-nos um email ou acompanha as transmissões do RicFazeres.
-            </p>
+            </motion.p>
           </motion.div>
         </div>
       </section>
@@ -53,14 +70,16 @@ export default function Contacts() {
                 href={item.href}
                 target={item.label !== "Email" ? "_blank" : undefined}
                 rel={item.label !== "Email" ? "noopener noreferrer" : undefined}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, type: "spring", stiffness: 200, damping: 20 }}
+                whileHover={{ y: -6, scale: 1.02 }}
                 className="card-racing overflow-hidden group cursor-pointer flex flex-col w-full max-w-sm"
               >
                 <div className="p-4 sm:p-6 flex-1 flex flex-col">
                   <div className="flex items-center justify-between mb-3">
-                    <Icon className="h-8 w-8 text-primary" />
+                    <Icon className="h-8 w-8 text-primary transition-transform duration-300 group-hover:scale-110" />
                     {item.label !== "Email" && (
                       <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     )}

@@ -78,6 +78,7 @@ const COUNTRIES = [
   { code: "FR", name: "France" },
   { code: "IT", name: "Italy" },
   { code: "BR", name: "Brazil" },
+  { code: "CU", name: "Cuba" },
   { code: "NL", name: "Netherlands" },
 ];
 
@@ -629,16 +630,26 @@ export default function Classificacao() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <h1 className="font-racing text-2xl sm:text-4xl md:text-6xl font-bold mb-4 racing-glow">
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.6 }}
+              className="font-racing text-2xl sm:text-4xl md:text-6xl font-bold mb-4 racing-glow"
+            >
               <span className="text-gradient-racing">Classificação</span>{" "}
               <span className="text-foreground">do Campeonato</span>
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35, duration: 0.5 }}
+              className="text-lg text-muted-foreground max-w-2xl mx-auto"
+            >
               Acompanha a classificação das equipas nas classes LMP2 e GT3 PRO
-            </p>
+            </motion.p>
           </motion.div>
         </div>
       </section>

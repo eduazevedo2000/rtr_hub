@@ -44,8 +44,9 @@ export default function Login() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,_hsl(24_90%_50%_/_0.08)_0%,_hsl(268_40%_30%_/_0.04)_40%,_transparent_70%)]" />
       
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className="relative w-full max-w-md"
       >
         <Link
@@ -56,11 +57,21 @@ export default function Login() {
           Voltar
         </Link>
 
-        <div className="card-racing p-8">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.15, duration: 0.5 }}
+          className="card-racing p-8"
+        >
           <div className="text-center mb-8">
-            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 mb-4 shadow-lg shadow-primary/20">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.25, type: "spring", stiffness: 200, damping: 12 }}
+              className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 mb-4 shadow-lg shadow-primary/20"
+            >
               <span className="font-racing text-xl font-bold text-primary-foreground">R</span>
-            </div>
+            </motion.div>
             <h1 className="font-racing text-2xl font-bold">
               Entrar
             </h1>
@@ -115,7 +126,7 @@ export default function Login() {
               )}
             </Button>
           </form>
-        </div>
+        </motion.div>
       </motion.div>
     </div>
   );
