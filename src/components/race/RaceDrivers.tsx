@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
-import { useDriversCache } from "@/hooks/useDriversCache";
+import { useDrivers } from "@/hooks/queries/useDrivers";
 import {
   Dialog,
   DialogContent,
@@ -82,7 +82,7 @@ function DriverCard({ driver, onClick, compact = false }: { driver: Driver; onCl
 }
 
 export function RaceDrivers({ driverIds, driverGroups }: RaceDriversProps) {
-  const { drivers: cachedDrivers, loading: cacheLoading } = useDriversCache();
+  const { data: cachedDrivers = [], isLoading: cacheLoading } = useDrivers();
   const [expanded, setExpanded] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const drivers = driverIds

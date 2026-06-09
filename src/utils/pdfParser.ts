@@ -76,15 +76,10 @@ export async function parsePdfToStandings(file: File): Promise<ParseResult> {
 function extractStandingsFromText(text: string): ParsedStanding[] {
   const standings: ParsedStanding[] = [];
   
-  // Debug: log the extracted text
-  console.log("Extracted PDF text:", text);
-  
   // The PDF text comes as a continuous stream of words
   // We need to find patterns like: number +/- number teamname number number...
   // Split by common separators and clean up
   const words = text.split(/\s+/).filter(w => w.trim().length > 0);
-  
-  console.log("Words array:", words);
   
   // Find where the data starts (after "TOP10" header)
   let startIndex = -1;
@@ -100,8 +95,6 @@ function extractStandingsFromText(text: string): ParsedStanding[] {
     throw new Error("Formato de PDF não reconhecido: cabeçalho da tabela não encontrado");
   }
   
-  console.log("Data starts at index:", startIndex);
-  
   // Parse data starting from after the header
   let i = startIndex;
   while (i < words.length) {
@@ -116,7 +109,6 @@ function extractStandingsFromText(text: string): ParsedStanding[] {
     if (result) {
       standings.push(result.standing);
       i = result.nextIndex;
-      console.log("Parsed standing:", result.standing);
     } else {
       i++;
     }
@@ -127,7 +119,6 @@ function extractStandingsFromText(text: string): ParsedStanding[] {
     throw new Error("Nenhum dado de classificação encontrado no PDF");
   }
   
-  console.log("Total standings found:", standings.length);
   return standings;
 }
 

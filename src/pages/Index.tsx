@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Flag, Clock, Users, Trophy, Car, Layers, Cloud, Sun, CloudRain, Edit, Loader2, Map, Upload, X, Plus } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { RaceEventsList } from "@/components/race/RaceEventsList";
@@ -10,6 +11,8 @@ import { RaceDrivers } from "@/components/race/RaceDrivers";
 import { Countdown } from "@/components/race/Countdown";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useActiveRace } from "@/hooks/queries/useActiveRace";
+import { queryKeys } from "@/hooks/queries/queryKeys";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,9 +41,10 @@ type Race = Database["public"]["Tables"]["races"]["Row"] & {
 const Index = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [activeRace, setActiveRace] = useState<Race | null>(null);
-  const [nextRace, setNextRace] = useState<Race | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: raceData, isLoading: loading } = useActiveRace();
+  const activeRace = raceData?.activeRace ?? null;
+  const nextRace = raceData?.nextRace ?? null;
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -71,77 +75,8 @@ const Index = () => {
   // se houver corrida ativa, usa essa; caso contrário, usa a próxima corrida
   const trackInfoRaceId = activeRace?.id ?? nextRace?.id;
 
-  useEffect(() => {
-    const fetchActiveRace = async () => {
-      // Primeiro tenta buscar uma corrida ativa
-      const { data: activeData, error: activeError } = await supabase
-        .from("races")
-        .select("*")
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (!activeError && activeData) {
-        setActiveRace(activeData);
-        setLoading(false);
-        return;
-      }
-
-      // Se não houver corrida ativa, verifica se existe uma corrida com data hoje e ativa-a
-      const now = new Date();
-      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      const { data: todayRaces, error: todayError } = await supabase
-        .from("races")
-        .select("*")
-        .gte("date", startOfToday.toISOString())
-        .lt("date", startOfTomorrow.toISOString())
-        .order("date", { ascending: true })
-        .limit(1);
-
-      if (!todayError && todayRaces && todayRaces.length > 0) {
-        const raceToActivate = todayRaces[0];
-        // Se já existe um evento "finish" para a corrida de hoje, não reativar live.
-        const { data: finishEvents, error: finishError } = await supabase
-          .from("race_events")
-          .select("id")
-          .eq("race_id", raceToActivate.id)
-          .eq("event_type", "finish")
-          .limit(1);
-
-        const hasFinishEvent = !finishError && !!finishEvents && finishEvents.length > 0;
-
-        if (!hasFinishEvent) {
-          await supabase.from("races").update({ is_active: false }).eq("is_active", true);
-          const { error: updateErr } = await supabase
-            .from("races")
-            .update({ is_active: true })
-            .eq("id", raceToActivate.id);
-          if (!updateErr) {
-            setActiveRace(raceToActivate);
-            setLoading(false);
-            return;
-          }
-        }
-      }
-
-      // Fallback: próxima corrida futura (countdown)
-      const { data: nextRaceData, error: nextRaceError } = await supabase
-        .from("races")
-        .select("*")
-        .gt("date", new Date().toISOString())
-        .order("date", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (!nextRaceError && nextRaceData) {
-        setNextRace(nextRaceData);
-      }
-
-      setLoading(false);
-    };
-
-    fetchActiveRace();
-  }, []);
+  const invalidateActiveRace = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.races.active() });
 
   const openEditDialog = () => {
     if (!activeRace) return;
@@ -174,45 +109,16 @@ const Index = () => {
     setEditDialogOpen(true);
   };
 
-  const uploadRaceImage = async (raceId: string, file: File, type: "weather" | "map") => {
-    const bucket = type === "weather" ? "track-weather" : "track-images";
-    const fileExt = file.name.split(".").pop();
-    const filePath = `${raceId}/${Date.now()}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file, { cacheControl: "31536000", upsert: false });
-    if (uploadError) throw uploadError;
-
-    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(filePath);
-
-    const { data: imageData, error: imageError } = await supabase
-      .from("images")
-      .insert({
-        storage_path: filePath,
-        url: publicUrl,
-        filename: file.name,
-        mime_type: file.type,
-        size_bytes: file.size,
-        description: type === "weather" ? "Weather forecast" : "Track map",
-        category: type === "weather" ? "weather" : "track-map",
-      })
-      .select()
-      .single();
-    if (imageError) throw imageError;
-    return imageData;
-  };
-
   const handleUpdateRace = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeRace) return;
 
     setSubmitting(true);
-    
+
     const hours = editForm.duration_hours ? parseInt(editForm.duration_hours, 10) : 0;
     const minutes = editForm.duration_minutes ? parseInt(editForm.duration_minutes, 10) : 0;
     const totalHours = hours + (minutes / 60);
-    
+
     const updateData = {
       name: editForm.name,
       track: editForm.track,
@@ -235,25 +141,8 @@ const Index = () => {
 
     if (!error && (weatherFile || mapFile)) {
       try {
-        const weatherImg = weatherFile ? await uploadRaceImage(activeRace.id, weatherFile, "weather") : null;
-        const mapImg = mapFile ? await uploadRaceImage(activeRace.id, mapFile, "map") : null;
-
-        const fields = {
-          ...(weatherImg ? { weather_image_id: weatherImg.id } : {}),
-          ...(mapImg ? { track_map_id: mapImg.id } : {}),
-        };
-
-        const { data: existing } = await supabase
-          .from("track_info")
-          .select("id")
-          .eq("race_id", activeRace.id)
-          .maybeSingle();
-
-        if (existing) {
-          await supabase.from("track_info").update(fields).eq("id", existing.id);
-        } else {
-          await supabase.from("track_info").insert({ race_id: activeRace.id, ...fields });
-        }
+        const { saveTrackInfo } = await import("@/lib/saveTrackInfo");
+        await saveTrackInfo(activeRace.id, weatherFile, mapFile);
       } catch (imgErr: any) {
         toast({
           variant: "destructive",
@@ -273,7 +162,7 @@ const Index = () => {
       });
     } else {
       toast({ title: "Corrida atualizada!" });
-      setActiveRace(data);
+      invalidateActiveRace();
       setEditDialogOpen(false);
     }
   };

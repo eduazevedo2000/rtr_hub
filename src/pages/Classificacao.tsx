@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useStandings } from "@/hooks/queries/useStandings";
+import { queryKeys } from "@/hooks/queries/queryKeys";
 import {
   Dialog,
   DialogContent,
@@ -151,8 +154,8 @@ const recomputeRanks = async (className: "LMP2" | "GT3 PRO") => {
 export default function Classificacao() {
   const pointsInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedClass, setSelectedClass] = useState<"LMP2" | "GT3 PRO">("GT3 PRO");
-  const [standings, setStandings] = useState<Standing[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: standings = [], isLoading: loading } = useStandings(selectedClass);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStanding, setEditingStanding] = useState<Standing | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -186,9 +189,8 @@ export default function Classificacao() {
     top10: "0",
   });
 
-  useEffect(() => {
-    fetchStandings();
-  }, [selectedClass]);
+  const invalidateStandings = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.standings.all });
 
   useEffect(() => {
     if (dialogOpen) {
@@ -197,26 +199,6 @@ export default function Classificacao() {
       });
     }
   }, [dialogOpen]);
-
-  const fetchStandings = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("championship_standings")
-      .select("*")
-      .eq("class", selectedClass)
-      .order("rank", { ascending: true });
-
-    if (error) {
-      toast({
-        title: "Erro ao carregar classificação",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setStandings(data || []);
-    }
-    setLoading(false);
-  };
 
   const openAdd = () => {
     setEditingStanding(null);
@@ -308,7 +290,7 @@ export default function Classificacao() {
           await supabase.storage.from("ChampionshipLogos").remove([oldPath]);
         }
       } catch (err) {
-        console.log("Could not delete old image:", err);
+        // non-critical: old image cleanup failed
       }
     }
 
@@ -390,7 +372,7 @@ export default function Classificacao() {
         await recomputeRanks(form.class as "LMP2" | "GT3 PRO");
         toast({ title: "Classificação atualizada!" });
         closeDialog();
-        fetchStandings();
+        invalidateStandings();
       }
     } else {
       // Create new standing
@@ -408,7 +390,7 @@ export default function Classificacao() {
         await recomputeRanks(form.class as "LMP2" | "GT3 PRO");
         toast({ title: "Classificação adicionada!" });
         closeDialog();
-        fetchStandings();
+        invalidateStandings();
       }
     }
 
@@ -433,7 +415,7 @@ export default function Classificacao() {
           await supabase.storage.from("ChampionshipLogos").remove([path]);
         }
       } catch (err) {
-        console.log("Could not delete logo:", err);
+        // non-critical: logo cleanup failed
       }
     }
 
@@ -454,7 +436,7 @@ export default function Classificacao() {
       toast({ title: "Classificação removida!" });
       setDeleteDialogOpen(false);
       setStandingToDelete(null);
-      fetchStandings();
+      invalidateStandings();
     }
   };
 
@@ -597,7 +579,7 @@ export default function Classificacao() {
       
       // Refresh if viewing the imported class
       if (selectedClass === importClass) {
-        fetchStandings();
+        invalidateStandings();
       }
     } catch (error) {
       console.error("Import error:", error);

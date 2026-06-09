@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { RaceEventCard } from "./RaceEventCard";
 import { Link, Loader2, Plus, Radio, RefreshCcw } from "lucide-react";
+import { useEventTypes } from "@/hooks/queries/useEventTypes";
+import { useDrivers } from "@/hooks/queries/useDrivers";
 import {
   Select,
   SelectContent,
@@ -55,8 +57,8 @@ export function RaceEventsList({ raceId, driverGroups }: RaceEventsListProps) {
   const [events, setEvents] = useState<RaceEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [eventTypes, setEventTypes] = useState<EventType[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const { data: eventTypes = [] } = useEventTypes();
+  const { data: drivers = [] } = useDrivers();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedTeam, setSelectedTeam] = useState<string>("");
   const resolvedTeam = useMemo(() => {
@@ -79,7 +81,7 @@ export function RaceEventsList({ raceId, driverGroups }: RaceEventsListProps) {
 
   useEffect(() => {
     const loadData = async () => {
-      await Promise.all([getCategories(), getEventTypes(), getDrivers(), fetchEvents()]);
+      await Promise.all([getCategories(), fetchEvents()]);
     };
     loadData();
 
@@ -212,37 +214,6 @@ export function RaceEventsList({ raceId, driverGroups }: RaceEventsListProps) {
     }
   };
 
-  const getEventTypes = async () => {
-    const { data, error } = await supabase
-      .from("event_types")
-      .select("*")
-      .order("order_index", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching event types:", error);
-      return;
-    }
-
-    if (data) {
-      setEventTypes(data);
-    }
-  };
-
-  const getDrivers = async () => {
-    const { data, error } = await supabase
-      .from("drivers")
-      .select("*")
-      .order("name", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching drivers:", error);
-      return;
-    }
-
-    if (data) {
-      setDrivers(data);
-    }
-  };
 
   const fetchEvents = async () => {
     // If no raceId, don't fetch any events

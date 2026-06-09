@@ -2,43 +2,31 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Flag, ChevronRight, Upload, Loader2, Trash2, Calendar } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { LeMansCelebration } from "@/components/LeMansCelebration";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
-
-type ImageRow = Database["public"]["Tables"]["images"]["Row"];
+import { useLandingImages } from "@/hooks/queries/useLandingImages";
+import { queryKeys } from "@/hooks/queries/queryKeys";
 
 /** Hino da equipa — https://www.youtube.com/watch?v=xcFs9jls1z8 */
 const TEAM_ANTHEM_IFRAME_SRC =
-  "https://www.youtube.com/embed/xcFs9jls1z8?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1";
+  "https://www.youtube.com/embed/xcFs9jls1z8?autoplay=0&playsinline=1&rel=0&modestbranding=1";
 
 export default function Landing() {
   const { isAdmin } = useIsAdmin();
   const { toast } = useToast();
-  const [landingImages, setLandingImages] = useState<ImageRow[]>([]);
+  const queryClient = useQueryClient();
+  const { data: landingImages = [], isLoading: loading } = useLandingImages();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchLandingImages = async () => {
-    const { data, error } = await supabase
-      .from("images")
-      .select("*")
-      .eq("category", "landing")
-      .order("created_at", { ascending: true });
-
-    if (!error) setLandingImages(data ?? []);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchLandingImages();
-  }, []);
+  const invalidateImages = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.images.landing() });
 
   useEffect(() => {
     if (landingImages.length <= 1) {
@@ -89,7 +77,7 @@ export default function Landing() {
       if (insertError) throw insertError;
 
       toast({ title: "Imagem adicionada!" });
-      await fetchLandingImages();
+      await invalidateImages();
     } catch (err: any) {
       toast({ title: "Erro ao carregar imagem", description: err?.message ?? "", variant: "destructive" });
     } finally {
@@ -104,7 +92,7 @@ export default function Landing() {
       await supabase.from("images").delete().eq("id", id);
       await supabase.storage.from("landing").remove([storagePath]);
       toast({ title: "Imagem removida." });
-      await fetchLandingImages();
+      await invalidateImages();
     } catch (err: any) {
       toast({ title: "Erro ao remover", description: err?.message ?? "", variant: "destructive" });
     }

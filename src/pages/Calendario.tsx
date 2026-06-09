@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar as CalendarIcon,
@@ -16,10 +16,13 @@ import {
   X,
   Flag,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useRaces } from "@/hooks/queries/useRaces";
+import { queryKeys } from "@/hooks/queries/queryKeys";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,8 +109,8 @@ function formatDateKey(d: Date) {
 export default function Calendario() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [races, setRaces] = useState<Race[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: races = [], isLoading: loading } = useRaces("asc");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -238,21 +241,8 @@ export default function Calendario() {
     return racesByDate[key] ?? [];
   }, [selectedDate, racesByDate]);
 
-  useEffect(() => {
-    const fetchRaces = async () => {
-      const { data, error } = await supabase
-        .from("races")
-        .select("*")
-        .order("date", { ascending: true });
-
-      if (!error && data) {
-        setRaces(data);
-      }
-      setLoading(false);
-    };
-
-    fetchRaces();
-  }, []);
+  const invalidateRaces = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.races.all });
 
   const openAdd = () => {
     const now = new Date();
@@ -319,64 +309,15 @@ export default function Calendario() {
       });
     } else {
       toast({ title: "Corrida em direto!", description: `${race.name} está agora na página Live.` });
-      setRaces((prev) =>
-        prev.map((r) => ({ ...r, is_active: r.id === race.id }))
-      );
+      invalidateRaces();
     }
   };
 
-  const uploadRaceImage = async (raceId: string, file: File, type: "weather" | "map") => {
-    const bucket = type === "weather" ? "track-weather" : "track-images";
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${Date.now()}.${fileExt}`;
-    const filePath = `${raceId}/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file, { cacheControl: "31536000", upsert: false });
-    if (uploadError) throw uploadError;
-
-    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(filePath);
-
-    const { data: imageData, error: imageError } = await supabase
-      .from("images")
-      .insert({
-        storage_path: filePath,
-        url: publicUrl,
-        filename: file.name,
-        mime_type: file.type,
-        size_bytes: file.size,
-        description: type === "weather" ? "Weather forecast" : "Track map",
-        category: type === "weather" ? "weather" : "track-map",
-      })
-      .select()
-      .single();
-    if (imageError) throw imageError;
-    return imageData;
-  };
-
-  const saveTrackInfo = async (raceId: string) => {
+  const handleSaveTrackInfo = async (raceId: string) => {
     if (!weatherFile && !mapFile) return;
     try {
-      const weatherImg = weatherFile ? await uploadRaceImage(raceId, weatherFile, "weather") : null;
-      const mapImg = mapFile ? await uploadRaceImage(raceId, mapFile, "map") : null;
-
-      const { data: existing } = await supabase
-        .from("track_info")
-        .select("id")
-        .eq("race_id", raceId)
-        .maybeSingle();
-
-      const fields = {
-        ...(weatherImg ? { weather_image_id: weatherImg.id } : {}),
-        ...(mapImg ? { track_map_id: mapImg.id } : {}),
-      };
-
-      if (existing) {
-        await supabase.from("track_info").update(fields).eq("id", existing.id);
-      } else {
-        await supabase.from("track_info").insert({ race_id: raceId, ...fields });
-      }
+      const { saveTrackInfo } = await import("@/lib/saveTrackInfo");
+      await saveTrackInfo(raceId, weatherFile, mapFile);
     } catch (err: any) {
       toast({
         variant: "destructive",
@@ -427,18 +368,14 @@ export default function Calendario() {
       return;
     }
 
-    await saveTrackInfo(inserted.id);
+    await handleSaveTrackInfo(inserted.id);
 
     setSubmitting(false);
     toast({ title: "Corrida adicionada!" });
     setAddDialogOpen(false);
     resetImageState();
     setGroups([]);
-    const { data } = await supabase
-      .from("races")
-      .select("*")
-      .order("date", { ascending: true });
-    if (data) setRaces(data);
+    invalidateRaces();
   };
 
   const handleEdit = async (e: React.FormEvent) => {
@@ -467,7 +404,7 @@ export default function Calendario() {
       .eq("id", selectedRace.id);
 
     if (!error) {
-      await saveTrackInfo(selectedRace.id);
+      await handleSaveTrackInfo(selectedRace.id);
     }
 
     setSubmitting(false);
@@ -484,11 +421,7 @@ export default function Calendario() {
       resetImageState();
       setGroups([]);
       setSelectedRace(null);
-      const { data } = await supabase
-        .from("races")
-        .select("*")
-        .order("date", { ascending: true });
-      if (data) setRaces(data);
+      invalidateRaces();
     }
   };
 
@@ -510,7 +443,7 @@ export default function Calendario() {
       toast({ title: "Corrida removida!" });
       setDeleteDialogOpen(false);
       setSelectedRace(null);
-      setRaces((prev) => prev.filter((r) => r.id !== selectedRace.id));
+      invalidateRaces();
     }
   };
 

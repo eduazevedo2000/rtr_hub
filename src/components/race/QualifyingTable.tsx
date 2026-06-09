@@ -31,7 +31,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
-import { useDriversCache } from "@/hooks/useDriversCache";
+import { useDrivers } from "@/hooks/queries/useDrivers";
 
 type QualifyingResultRow = Database["public"]["Tables"]["qualifying_results"]["Row"];
 type DriverRow = Database["public"]["Tables"]["drivers"]["Row"];
@@ -50,7 +50,7 @@ export function QualifyingTable({ raceId }: QualifyingTableProps) {
   const { toast } = useToast();
   const [results, setResults] = useState<QualifyingResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const { drivers } = useDriversCache();
+  const { data: drivers = [] } = useDrivers();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingResult, setEditingResult] = useState<QualifyingResult | null>(null);
   const [submitting, setSubmitting] = useState(false);

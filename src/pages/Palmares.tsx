@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Calendar, Loader2, Trash2, PlayCircle, Link2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { RaceEventsList } from "@/components/race/RaceEventsList";
@@ -25,140 +26,36 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { RacingLoader } from "@/components/RacingLoader";
+import { usePalmares } from "@/hooks/queries/useAchievements";
+import { useCategories } from "@/hooks/queries/useCategories";
+import { queryKeys } from "@/hooks/queries/queryKeys";
 import type { Database } from "@/integrations/supabase/types";
 
 type Race = Database["public"]["Tables"]["races"]["Row"];
-type AchievementPosition = Database["public"]["Tables"]["achievement_positions"]["Row"];
-type Category = Database["public"]["Tables"]["categories"]["Row"];
 
 export default function Palmares() {
   const { user } = useAuth();
   const { isAdmin } = useIsAdmin();
   const { toast } = useToast();
-  const [races, setRaces] = useState<Race[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: palmaresData, isLoading: loading } = usePalmares();
+  const { data: categoriesData = [] } = useCategories();
+  const races = palmaresData?.races ?? [];
+  const racePositions = palmaresData?.racePositions ?? {};
   const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null);
-  // Map of race_id -> array of positions
-  const [racePositions, setRacePositions] = useState<Record<string, AchievementPosition[]>>({});
-  // Map of category name -> color (from categories table)
-  const [categoryColors, setCategoryColors] = useState<Record<string, string>>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [raceToDelete, setRaceToDelete] = useState<Race | null>(null);
 
-  const fetchRaces = async () => {
-    // Fetch all achievements first to know which races have been completed
-    const { data: achievementsData, error: achievementsError } = await supabase
-      .from("team_achievements")
-      .select(`
-        id,
-        race_id,
-        achievement_positions (
-          id,
-          category,
-          position_finished
-        )
-      `);
-
-    if (achievementsError) {
-      setLoading(false);
-      return;
+  const categoryColors = useMemo(() => {
+    const colors: Record<string, string> = {};
+    for (const cat of categoriesData) {
+      if (cat.color) colors[cat.name] = cat.color;
     }
+    return colors;
+  }, [categoriesData]);
 
-    // Get race IDs that have achievements (manually finished races)
-    const raceIdsWithAchievements = achievementsData
-      ?.map(a => a.race_id)
-      .filter(Boolean) || [];
-
-    // Fetch races that either:
-    // 1. Have achievements (manually finished)
-    // 2. Have a date in the past (automatically considered finished)
-    const now = new Date().toISOString();
-    
-    let query = supabase
-      .from("races")
-      .select("*")
-      .order("date", { ascending: false });
-
-    // If there are achievements, include those races OR races in the past
-    if (raceIdsWithAchievements.length > 0) {
-      query = query.or(`id.in.(${raceIdsWithAchievements.join(',')}),date.lt.${now}`);
-    } else {
-      // If no achievements yet, only show past races
-      query = query.lt("date", now);
-    }
-
-    const { data: racesData, error: racesError } = await query;
-
-    if (racesError || !racesData) {
-      setLoading(false);
-      return;
-    }
-
-    setRaces(racesData);
-    
-    // Build positions map from achievements data
-    if (achievementsData) {
-      const positionsMap: Record<string, AchievementPosition[]> = {};
-
-      for (const achievement of achievementsData) {
-        if (!achievement.race_id || !achievement.achievement_positions) continue;
-
-        // achievement_positions may come as a single object or array.
-        const positions = Array.isArray(achievement.achievement_positions)
-          ? achievement.achievement_positions
-          : [achievement.achievement_positions];
-
-        if (positions.length === 0) continue;
-
-        const existingPositions = positionsMap[achievement.race_id] ?? [];
-        positionsMap[achievement.race_id] = [
-          ...existingPositions,
-          ...(positions as AchievementPosition[]),
-        ];
-      }
-
-      // Sort and de-duplicate by category+position in case backend returns overlaps.
-      for (const raceId of Object.keys(positionsMap)) {
-        const uniqueByCategoryAndPosition = new Map<string, AchievementPosition>();
-        for (const position of positionsMap[raceId]) {
-          uniqueByCategoryAndPosition.set(
-            `${position.category}::${position.position_finished}`,
-            position
-          );
-        }
-
-        positionsMap[raceId] = Array.from(uniqueByCategoryAndPosition.values()).sort(
-          (a, b) => a.category.localeCompare(b.category)
-        );
-      }
-
-      setRacePositions(positionsMap);
-    }
-    
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchRaces();
-  }, []);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("name, color");
-
-      if (!error && data) {
-        const colors: Record<string, string> = {};
-        for (const cat of data as Category[]) {
-          if (cat.color) colors[cat.name] = cat.color;
-        }
-        setCategoryColors(colors);
-      }
-    };
-
-    fetchCategories();
-  }, []);
+  const invalidatePalmares = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.achievements.all });
 
   const formatDate = (d: string | null) => {
     if (!d) return "Data não especificada";
@@ -195,7 +92,7 @@ export default function Palmares() {
       });
     } else {
       toast({ title: "Corrida apagada!" });
-      fetchRaces();
+      invalidatePalmares();
     }
 
     setDeleteDialogOpen(false);

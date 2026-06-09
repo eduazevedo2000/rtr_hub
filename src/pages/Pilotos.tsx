@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Users, Loader2, User, Instagram, ExternalLink, Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { RacingLoader } from "@/components/RacingLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
@@ -34,17 +35,19 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useDrivers } from "@/hooks/queries/useDrivers";
+import { useCategories } from "@/hooks/queries/useCategories";
+import { queryKeys } from "@/hooks/queries/queryKeys";
 import type { Database } from "@/integrations/supabase/types";
 
 type Driver = Database["public"]["Tables"]["drivers"]["Row"];
-type Category = Database["public"]["Tables"]["categories"]["Row"];
 
 export default function Pilotos() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: drivers = [], isLoading: loading } = useDrivers();
+  const { data: categories = [] } = useCategories(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -59,34 +62,8 @@ export default function Pilotos() {
     image_url: "",
   });
 
-  useEffect(() => {
-    fetchDrivers();
-    fetchCategories();
-  }, []);
-
-  const fetchDrivers = async () => {
-    const { data, error } = await supabase
-      .from("drivers")
-      .select("*")
-      .order("name", { ascending: true });
-
-    if (!error && data) {
-      setDrivers(data);
-    }
-    setLoading(false);
-  };
-
-  const fetchCategories = async () => {
-    const { data } = await supabase
-      .from("categories")
-      .select("*")
-      .order("name", { ascending: true })
-      .neq("name", "GERAL");
-
-    if (data) {
-      setCategories(data);
-    }
-  };
+  const invalidateDrivers = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.drivers.all });
 
   const openAdd = () => {
     setEditingDriver(null);
@@ -165,7 +142,7 @@ export default function Pilotos() {
             .remove([oldPath]);
         }
       } catch (err) {
-        console.log("Could not delete old image:", err);
+        // non-critical: old image cleanup failed
         // Continue anyway
       }
     }
@@ -236,7 +213,7 @@ export default function Pilotos() {
       } else {
         toast({ title: "Piloto atualizado!" });
         closeDialog();
-        fetchDrivers();
+        invalidateDrivers();
       }
     } else {
       const { error } = await supabase
@@ -252,7 +229,7 @@ export default function Pilotos() {
       } else {
         toast({ title: "Piloto adicionado!" });
         closeDialog();
-        fetchDrivers();
+        invalidateDrivers();
       }
     }
 
@@ -281,7 +258,7 @@ export default function Pilotos() {
       });
     } else {
       toast({ title: "Piloto apagado!" });
-      fetchDrivers();
+      invalidateDrivers();
     }
 
     setDeleteDialogOpen(false);

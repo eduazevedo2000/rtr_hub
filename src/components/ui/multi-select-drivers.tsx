@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useDriversCache } from "@/hooks/useDriversCache";
+import { useDrivers } from "@/hooks/queries/useDrivers";
 
 interface MultiSelectDriversProps {
   selectedIds: string[];
@@ -12,7 +12,7 @@ interface MultiSelectDriversProps {
 }
 
 export function MultiSelectDrivers({ selectedIds, onChange, label = "Pilotos", filterIds }: MultiSelectDriversProps) {
-  const { drivers, loading } = useDriversCache();
+  const { data: drivers = [], isLoading: loading } = useDrivers();
 
   const toggleDriver = (driverId: string) => {
     if (selectedIds.includes(driverId)) {

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, Flag, Loader2, Trash2, Cloud, Map, Upload, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useRaces } from "@/hooks/queries/useRaces";
+import { useCategories } from "@/hooks/queries/useCategories";
+import { useEventTypes } from "@/hooks/queries/useEventTypes";
+import { useDrivers } from "@/hooks/queries/useDrivers";
+import { queryKeys } from "@/hooks/queries/queryKeys";
 import type { Database } from "@/integrations/supabase/types";
 
 type Race = Database["public"]["Tables"]["races"]["Row"];
@@ -33,15 +39,18 @@ export default function Admin() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const [races, setRaces] = useState<Race[]>([]);
+  const queryClient = useQueryClient();
+  const { data: races = [], isLoading: loading } = useRaces("desc");
+  const { data: categories = [] } = useCategories();
+  const { data: eventTypes = [] } = useEventTypes();
+  const { data: drivers = [] } = useDrivers();
   const [selectedRace, setSelectedRace] = useState<string>("");
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [eventTypes, setEventTypes] = useState<EventType[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const hydratedEditEventRef = useRef(false);
+
+  const invalidateRaces = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.races.all });
 
   // Initialize form state - check location.state for edit event
   const getInitialFormState = () => {
@@ -76,62 +85,6 @@ export default function Admin() {
     { category: "", position: "" },
   ]);
 
-  const getCategories = async () => {
-    const { data, error } = await supabase
-      .from("categories")
-      .select("*");
-
-    if (error) {
-      console.error("Error fetching categories:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar as categorias.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (data) {
-      setCategories(data);
-    }
-  };
-
-  const getEventTypes = async () => {
-    const { data, error } = await supabase
-      .from("event_types")
-      .select("*")
-      .order("order_index", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching event types:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os tipos de evento.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (data) {
-      setEventTypes(data);
-    }
-  };
-
-  const getDrivers = async () => {
-    const { data, error } = await supabase
-      .from("drivers")
-      .select("*")
-      .order("name", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching drivers:", error);
-      return;
-    }
-
-    if (data) {
-      setDrivers(data);
-    }
-  };
 
   // New race form state
   const [showNewRace, setShowNewRace] = useState(false);
@@ -155,40 +108,6 @@ export default function Admin() {
   const newRaceWeatherRef = useRef<HTMLInputElement>(null);
   const newRaceMapRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (!authLoading && !adminLoading) {
-      if (!user) {
-        navigate("/login");
-      } else if (!isAdmin) {
-        toast({
-          variant: "destructive",
-          title: "Acesso Negado",
-          description: "Não tens permissão para aceder a esta página.",
-        });
-        navigate("/");
-      }
-    }
-  }, [user, authLoading, adminLoading, isAdmin, navigate, toast]);
-
-  useEffect(() => {
-    const fetchRaces = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("races")
-        .select("*")
-        .order("date", { ascending: false });
-
-      if (!error && data) {
-        setRaces(data);
-      }
-      setLoading(false);
-      getCategories();
-      getEventTypes();
-      getDrivers();
-    };
-
-    if (user && isAdmin && !adminLoading) fetchRaces();
-  }, [user, isAdmin, adminLoading]);
 
   useEffect(() => {
     if (hydratedEditEventRef.current) return;
@@ -272,49 +191,9 @@ export default function Admin() {
     const newRaceId = data.id;
 
     // Upload optional images
-    const uploadImage = async (file: File, type: "weather" | "map") => {
-      const bucket = type === "weather" ? "track-weather" : "track-images";
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${newRaceId}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file, { cacheControl: "31536000", upsert: false });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(filePath);
-
-      const { data: imageData, error: imageError } = await supabase
-        .from("images")
-        .insert({
-          storage_path: filePath,
-          url: publicUrl,
-          filename: file.name,
-          mime_type: file.type,
-          size_bytes: file.size,
-          description: type === "weather" ? "Weather forecast" : "Track map",
-          category: type === "weather" ? "weather" : "track-map",
-        })
-        .select()
-        .single();
-
-      if (imageError) throw imageError;
-      return imageData;
-    };
-
     try {
-      const weatherImage = newRaceWeatherFile ? await uploadImage(newRaceWeatherFile, "weather") : null;
-      const mapImage = newRaceMapFile ? await uploadImage(newRaceMapFile, "map") : null;
-
-      if (weatherImage || mapImage) {
-        await supabase.from("track_info").insert({
-          race_id: newRaceId,
-          ...(weatherImage ? { weather_image_id: weatherImage.id } : {}),
-          ...(mapImage ? { track_map_id: mapImage.id } : {}),
-        });
-      }
+      const { saveTrackInfo } = await import("@/lib/saveTrackInfo");
+      await saveTrackInfo(newRaceId, newRaceWeatherFile, newRaceMapFile);
     } catch (imgError: any) {
       toast({
         variant: "destructive",
@@ -325,7 +204,7 @@ export default function Admin() {
 
     setSubmitting(false);
     toast({ title: "Corrida criada!" });
-    setRaces([data, ...races]);
+    invalidateRaces();
     setSelectedRace(data.id);
     setShowNewRace(false);
     setNewRaceForm({ name: "", track: "", tipo: "", is_active: true, num_cars: "", num_classes: "", weather: "", drivers: [], duration_hours: "", duration_minutes: "" });
